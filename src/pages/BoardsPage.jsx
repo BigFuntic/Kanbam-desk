@@ -39,8 +39,10 @@ function BoardsPage() {
     const newBoard = {
       id: Date.now(),
       title: name,
-      user: getSessionUser(),
-      columns: []
+      user,
+      columns: [],
+      pinned: false,
+      order: boards.length 
     };
 
     const updated = [...boards, newBoard];
@@ -55,6 +57,28 @@ function BoardsPage() {
 
     setBoards(updated);
     saveBoards(updated);
+    channel.postMessage(updated);
+  };
+
+  const togglePinBoard = (boardId) => {
+    let updated = boards.map((b) => {
+      if (b.id === boardId) {
+        return { ...b, pinned: !b.pinned };
+      }
+      return b;
+    });
+  
+    // разделяем
+    const pinned = updated.filter((b) => b.pinned);
+    const unpinned = updated
+      .filter((b) => !b.pinned)
+      .sort((a, b) => a.order - b.order);
+  
+    // 👇 закрепленные всегда сверху
+    updated = [...pinned, ...unpinned];
+  
+    setBoards(updated);
+    localStorage.setItem("boards", JSON.stringify(updated));
     channel.postMessage(updated);
   };
 
@@ -94,6 +118,15 @@ function BoardsPage() {
           <div onClick={() => navigate(`/board/${board.id}`)}>
             {board.title}
           </div>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              togglePinBoard(board.id);
+            }}
+          >
+            {board.pinned ? "📌 Закреплено" : "📍"}
+          </button>
 
           <button
             onClick={(e) => {
