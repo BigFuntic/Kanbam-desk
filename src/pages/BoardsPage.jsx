@@ -2,16 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { channel } from "./broadcast";
 import { getSessionUser, clearSessionUser } from "../sessionUser";
+import { getBoards, saveBoards } from "../api";
 
 function BoardsPage() {
   const [boards, setBoards] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const data = localStorage.getItem("boards");
-    if (data) {
-      setBoards(JSON.parse(data));
-    }
+    getBoards().then(setBoards);
   }, []);
 
   useEffect(() => {
@@ -48,7 +46,7 @@ function BoardsPage() {
     const updated = [...boards, newBoard];
 
     setBoards(updated);
-    localStorage.setItem("boards", JSON.stringify(updated));
+    saveBoards(updated);
     channel.postMessage(updated);
   };
 
@@ -56,7 +54,7 @@ function BoardsPage() {
     const updated = boards.filter((b) => b.id !== boardId);
 
     setBoards(updated);
-    localStorage.setItem("boards", JSON.stringify(updated));
+    saveBoards(updated);
     channel.postMessage(updated);
   };
 

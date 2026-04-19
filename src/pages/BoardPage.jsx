@@ -5,6 +5,7 @@ import { DndContext } from "@dnd-kit/core";
 import { useDraggable } from "@dnd-kit/core";
 import { useDroppable } from "@dnd-kit/core";
 import { channel } from "./broadcast";
+import { getBoards, saveBoards } from "../api";
 
 function BoardPage() {
   const { id } = useParams();
@@ -14,11 +15,11 @@ function BoardPage() {
   const [selectedCard, setSelectedCard] = useState(null);
   const [modalMode, setModalMode] = useState("edit");
 
-  // 1. Загрузка данных
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem("boards")) || [];
-    const foundBoard = data.find((b) => b.id == id);
-    setBoard(foundBoard);
+    getBoards().then((data) => {
+      const foundBoard = data.find((b) => b.id == id);
+      setBoard(foundBoard);
+    });
   }, [id]);
 
   useEffect(() => {
@@ -60,7 +61,8 @@ function BoardPage() {
       title: "",
       description: "",
       deadline: "", 
-      columnId
+      columnId,
+      images: []
     });
   
     setModalMode("create");
@@ -68,11 +70,13 @@ function BoardPage() {
   };
 
   // Вспомогательная функция для сохранения, чтобы не дублировать код
-  const saveAndUpdate = (updatedData) => {
-    localStorage.setItem("boards", JSON.stringify(updatedData));
-    channel.postMessage(updatedData);
+  const saveAndUpdate = async (updatedData) => {
+    await saveBoards(updatedData);
+  
     const newBoard = updatedData.find((b) => b.id == id);
     setBoard(newBoard);
+  
+    channel.postMessage(updatedData);
   };
 
   const editCard = (columnId, cardId) => {
@@ -331,6 +335,14 @@ function Card({ card, col, editCard, deleteCard, openEditModal }) {
         </b>
       </div>
 
+      {card.images?.length > 0 && (
+        <div style={{ marginTop: 5 }}>
+          {card.images.map((img, i) => (
+            <img key={i} src={img} width={50} style={{ marginRight: 5 }} />
+          ))}
+        </div>
+      )}
+
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -418,6 +430,49 @@ function Modal({ card, setCard, onClose, onSave }) {
           }
           placeholder="Описание"
         />
+
+        <input
+          type="file"
+          multiple
+          onChange={(e) => {
+            const files = Array.from(e.target.files);
+
+            files.forEach((file) => {
+              const reader = new FileReader();
+
+              reader.onload = () => {
+                setCard((prev) => ({
+                  ...prev,
+                  images: [...(prev.images || []), reader.result]
+                }));
+              };
+
+              reader.readAsDataURL(file);
+            });
+          }}
+        />
+
+        <div style={{ marginTop: 10 }}>
+          {card.images?.map((img, index) => (
+            <div key={index} style={{ position: "relative", marginBottom: 5 }}>
+              <img src={img} width={100} />
+
+              <button
+                onClick={() => {
+                  const newImages = card.images.filter((_, i) => i !== index);
+                  setCard({ ...card, images: newImages });
+                }}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  right: 0
+                }}
+              >
+                ❌
+              </button>
+            </div>
+          ))}
+        </div>
 
         <input
           value={card.deadline}
