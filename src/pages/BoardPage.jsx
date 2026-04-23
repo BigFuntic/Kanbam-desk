@@ -14,6 +14,25 @@ function BoardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
   const [modalMode, setModalMode] = useState("edit");
+  const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
+  const [newColumnTitle, setNewColumnTitle] = useState("");
+
+  const getNextCardId = (columns = []) => {
+    const maxCardId = columns.reduce((maxId, column) => {
+      const columnMax = (column.cards || []).reduce((innerMax, card) => {
+        return typeof card.id === "number" && card.id > innerMax ? card.id : innerMax;
+      }, 0);
+      return columnMax > maxId ? columnMax : maxId;
+    }, 0);
+    return maxCardId + 1;
+  };
+
+  const getNextColumnId = (columns = []) => {
+    const maxColumnId = columns.reduce((maxId, column) => {
+      return typeof column.id === "number" && column.id > maxId ? column.id : maxId;
+    }, 0);
+    return maxColumnId + 1;
+  };
 
   useEffect(() => {
     getBoards().then((data) => {
@@ -38,7 +57,7 @@ function BoardPage() {
 
   // 2. Функция добавления колонки
   const addColumn = () => {
-    const name = prompt("Название колонки");
+    const name = newColumnTitle.trim();
     if (!name) return;
 
     const data = JSON.parse(localStorage.getItem("boards")) || [];
@@ -46,18 +65,20 @@ function BoardPage() {
       if (b.id == id) {
         return {
           ...b,
-          columns: [...(b.columns || []), { id: Date.now(), title: name, cards: [] }]
+          columns: [...(b.columns || []), { id: getNextColumnId(b.columns), title: name, cards: [] }]
         };
       }
       return b;
     });
 
     saveAndUpdate(updated);
+    setNewColumnTitle("");
+    setIsColumnModalOpen(false);
   };
 
   const openCreateCardModal = (columnId) => {
     setSelectedCard({
-      id: Date.now(),
+      id: getNextCardId(board?.columns),
       title: "",
       description: "",
       deadline: "", 
@@ -256,53 +277,74 @@ function BoardPage() {
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      {
-    <div style={{ padding: 20 }}>
-      <h1>{board.title}</h1>
-      <button onClick={() => navigate("/")}>
-        ← Назад к доскам
-      </button>
-      <button onClick={addColumn}>Добавить колонку</button>
-
-      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-      {board.columns?.map((col) => (
-        <Column key={col.id} col={col}>
-
-          <button onClick={() => openCreateCardModal(col.id)}>
-            Добавить карточку
-          </button>
-
-          <button onClick={() => deleteColumn(col.id)}>
-            Удалить колонку
-          </button>
-
-          <div style={{ marginTop: 10 }}>
-            {col.cards?.map((card) => (
-              <Card
-                key={card.id}
-                card={card}
-                col={col}
-                editCard={editCard}
-                deleteCard={deleteCard}
-                openEditModal={openEditModal}
-              />
-            ))}
+      <div className="page-shell">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">{board.title}</h1>
+            <p className="page-subtitle">Перетаскивайте карточки между колонками.</p>
           </div>
+          <div className="board-card__actions">
+            <button className="button-secondary" onClick={() => navigate("/")}>
+              ← К доскам
+            </button>
+            <button className="button-primary" onClick={() => setIsColumnModalOpen(true)}>
+              Добавить колонку
+            </button>
+          </div>
+        </div>
 
-        </Column>
-      ))}
+        <div className="board-layout">
+          {board.columns?.map((col) => (
+            <Column key={col.id} col={col}>
+              <button className="button-secondary" onClick={() => openCreateCardModal(col.id)}>
+                Добавить карточку
+              </button>
+
+              <button className="button-danger" onClick={() => deleteColumn(col.id)}>
+                Удалить колонку
+              </button>
+
+              <div>
+                {col.cards?.map((card) => (
+                  <Card
+                    key={card.id}
+                    card={card}
+                    col={col}
+                    editCard={editCard}
+                    deleteCard={deleteCard}
+                    openEditModal={openEditModal}
+                  />
+                ))}
+              </div>
+            </Column>
+          ))}
+        </div>
+
+        {isModalOpen && (
+          <Modal
+            card={selectedCard}
+            setCard={setSelectedCard}
+            onClose={() => setIsModalOpen(false)}
+            onSave={saveCardChanges}
+          />
+        )}
+
+        {isColumnModalOpen && (
+          <NameModal
+            title="Добавить колонку"
+            value={newColumnTitle}
+            placeholder="Название колонки"
+            onChange={setNewColumnTitle}
+            onClose={() => {
+              setIsColumnModalOpen(false);
+              setNewColumnTitle("");
+            }}
+            onSave={addColumn}
+            saveLabel="Добавить"
+          />
+        )}
       </div>
-      {isModalOpen && (
-        <Modal
-          card={selectedCard}
-          setCard={setSelectedCard}
-          onClose={() => setIsModalOpen(false)}
-          onSave={saveCardChanges}
-        />
-      )}
-    </div>
-}
-  </DndContext>
+    </DndContext>
   );
 }
 
@@ -312,61 +354,57 @@ function Card({ card, col, editCard, deleteCard, openEditModal }) {
   });
 
   const style = {
-    border: "1px solid black",
-    padding: 5,
-    marginTop: 5,
-    background: "white",
     transform: transform
       ? `translate(${transform.x}px, ${transform.y}px)`
       : ""
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
-      
-      {/* 👇 DRAG ТОЛЬКО ЗДЕСЬ */}
+    <div ref={setNodeRef} style={style} className="card-item">
       <div
         {...listeners}
         {...attributes}
         style={{ cursor: "grab" }}
       >
-        <b onClick={() => editCard(col.id, card.id)}>
+        <span className="card-title" onClick={() => editCard(col.id, card.id)}>
           {card.title}
-        </b>
+        </span>
       </div>
 
       {card.images?.length > 0 && (
-        <div style={{ marginTop: 5 }}>
+        <div className="card-meta">
           {card.images.map((img, i) => (
-            <img key={i} src={img} width={50} style={{ marginRight: 5 }} />
+            <img key={i} src={img} width={50} style={{ marginRight: 5, borderRadius: 6 }} />
           ))}
         </div>
       )}
 
       <button
+        className="button-danger"
         onClick={(e) => {
           e.stopPropagation();
           deleteCard(col.id, card.id);
         }}
       >
-        ❌
+        Удалить
       </button>
 
       <button
+        className="button-secondary"
         onClick={(e) => {
           e.stopPropagation();
           openEditModal(card, col.id);
         }}
       >
-        ✏️
+        Редактировать
       </button>
 
       {card.description && (
-        <div style={{ fontSize: 12 }}>{card.description}</div>
+        <div className="card-meta">{card.description}</div>
       )}
 
       {card.deadline && (
-        <div style={{ fontSize: 12 }}>
+        <div className="card-meta">
           ⏰ {card.deadline}
         </div>
       )}
@@ -381,13 +419,11 @@ function Column({ col, children }) {
   return (
     <div
       ref={setNodeRef}
-      style={{
-        border: "1px solid gray",
-        padding: 10,
-        minWidth: 200
-      }}
+      className="column"
     >
-      <h3>{col.title}</h3>
+      <div className="column-header">
+        <h3>{col.title}</h3>
+      </div>
       {children}
     </div>
   );
@@ -397,25 +433,14 @@ function Modal({ card, setCard, onClose, onSave }) {
   if (!card) return null;
 
   return (
-    <div style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: "rgba(0,0,0,0.5)"
-    }}>
-      <div style={{
-        background: "white",
-        padding: 20,
-        margin: "100px auto",
-        width: 300
-      }}>
+    <div className="modal-overlay">
+      <div className="modal-content">
         <h3>
           {card.title ? "Редактировать карточку" : "Создать карточку"}
         </h3>
 
         <input
+          className="modal-field"
           value={card.title}
           onChange={(e) =>
             setCard({ ...card, title: e.target.value })
@@ -424,6 +449,7 @@ function Modal({ card, setCard, onClose, onSave }) {
         />
 
         <textarea
+          className="modal-field"
           value={card.description}
           onChange={(e) =>
             setCard({ ...card, description: e.target.value })
@@ -432,6 +458,7 @@ function Modal({ card, setCard, onClose, onSave }) {
         />
 
         <input
+          className="modal-field"
           type="file"
           multiple
           onChange={(e) => {
@@ -452,12 +479,13 @@ function Modal({ card, setCard, onClose, onSave }) {
           }}
         />
 
-        <div style={{ marginTop: 10 }}>
+        <div className="card-meta">
           {card.images?.map((img, index) => (
             <div key={index} style={{ position: "relative", marginBottom: 5 }}>
-              <img src={img} width={100} />
+              <img src={img} width={100} style={{ borderRadius: 8 }} />
 
               <button
+                className="button-danger"
                 onClick={() => {
                   const newImages = card.images.filter((_, i) => i !== index);
                   setCard({ ...card, images: newImages });
@@ -475,6 +503,7 @@ function Modal({ card, setCard, onClose, onSave }) {
         </div>
 
         <input
+          className="modal-field"
           value={card.deadline}
           onChange={(e) =>
             setCard({ ...card, deadline: e.target.value })
@@ -482,10 +511,33 @@ function Modal({ card, setCard, onClose, onSave }) {
           placeholder="Срок"
         />
 
-        <br /><br />
+        <div className="modal-actions">
+          <button className="button-secondary" onClick={onClose}>Закрыть</button>
+          <button className="button-primary" onClick={onSave}>Сохранить</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-        <button onClick={onSave}>Сохранить</button>
-        <button onClick={onClose}>Закрыть</button>
+function NameModal({ title, value, placeholder, onChange, onClose, onSave, saveLabel }) {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content modal-content--compact">
+        <h3>{title}</h3>
+        <input
+          className="modal-field"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          autoFocus
+        />
+        <div className="modal-actions">
+          <button className="button-secondary" onClick={onClose}>Отмена</button>
+          <button className="button-primary" onClick={onSave} disabled={!value.trim()}>
+            {saveLabel}
+          </button>
+        </div>
       </div>
     </div>
   );

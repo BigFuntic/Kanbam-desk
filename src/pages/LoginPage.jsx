@@ -14,20 +14,20 @@ function LoginPage() {
   };
 
   return (
-    <div style={{ padding: 50 }}>
-      <h2>Вход</h2>
-
+    <div className="auth-layout">
+      <div className="auth-card">
+      <h2>Добро пожаловать</h2>
+      <p>Войдите, чтобы продолжить работу с вашими досками.</p>
       <input
+        className="auth-field"
         placeholder="Введите имя"
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
-
-      <br /><br />
-
-      <button onClick={handleLogin}>
+      <button className="button-primary" onClick={handleLogin}>
         Войти
       </button>
+      </div>
     </div>
   );
 }

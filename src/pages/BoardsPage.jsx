@@ -6,7 +6,16 @@ import { getBoards, saveBoards } from "../api";
 
 function BoardsPage() {
   const [boards, setBoards] = useState([]);
+  const [isCreateBoardModalOpen, setIsCreateBoardModalOpen] = useState(false);
+  const [newBoardTitle, setNewBoardTitle] = useState("");
   const navigate = useNavigate();
+
+  const getNextBoardId = () => {
+    const maxBoardId = boards.reduce((maxId, board) => {
+      return typeof board.id === "number" && board.id > maxId ? board.id : maxId;
+    }, 0);
+    return maxBoardId + 1;
+  };
 
   useEffect(() => {
     getBoards().then(setBoards);
@@ -25,7 +34,7 @@ function BoardsPage() {
   }, []);
 
   const addBoard = () => {
-    const name = prompt("Название доски");
+    const name = newBoardTitle.trim();
     if (!name) return;
 
     const user = getSessionUser();
@@ -37,7 +46,7 @@ function BoardsPage() {
     }
 
     const newBoard = {
-      id: Date.now(),
+      id: getNextBoardId(),
       title: name,
       user,
       columns: [],
@@ -50,6 +59,8 @@ function BoardsPage() {
     setBoards(updated);
     saveBoards(updated);
     channel.postMessage(updated);
+    setNewBoardTitle("");
+    setIsCreateBoardModalOpen(false);
   };
 
   const deleteBoard = (boardId) => {
@@ -97,58 +108,105 @@ function BoardsPage() {
   const myBoards = boards.filter((b) => b.user === user);
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Мои доски</h1>
-
-      <button onClick={addBoard}>Создать доску</button>
-
-      <button
-        onClick={() => {
-          clearSessionUser();
-          navigate("/login");
-        }}
-        style={{ marginLeft: 10 }}
-      >
-        Выйти
-      </button>
-
-      {myBoards.length === 0 && (
-        <p style={{ marginTop: 20 }}>У вас пока нет досок</p>
-      )}
-
-      {myBoards.map((board) => (
-        <div
-          key={board.id}
-          style={{
-            border: "1px solid gray",
-            margin: "10px 0",
-            padding: 10,
-            cursor: "pointer"
-          }}
-        >
-          <div onClick={() => navigate(`/board/${board.id}`)}>
-            {board.title}
-          </div>
-
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              togglePinBoard(board.id);
-            }}
-          >
-            {board.pinned ? "📌 Закреплено" : "📍"}
+    <div className="page-shell">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Мои доски</h1>
+          <p className="page-subtitle">Управляйте задачами в удобном визуальном формате.</p>
+        </div>
+        <div className="board-card__actions">
+          <button className="button-primary" onClick={() => setIsCreateBoardModalOpen(true)}>
+            Создать доску
           </button>
-
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              deleteBoard(board.id);
+            className="button-secondary"
+            onClick={() => {
+              clearSessionUser();
+              navigate("/login");
             }}
           >
-            ×
+            Выйти
           </button>
         </div>
-      ))}
+      </div>
+
+      {myBoards.length === 0 && (
+        <p>У вас пока нет досок. Создайте первую, чтобы начать работу.</p>
+      )}
+
+      <div className="boards-grid">
+        {myBoards.map((board) => (
+          <div key={board.id} className="board-card">
+            <div
+              className="board-card__title"
+              onClick={() => navigate(`/board/${board.id}`)}
+            >
+              {board.title}
+            </div>
+            <div className="board-card__meta">
+              {board.pinned ? "Закреплена вверху списка" : "Обычная доска"}
+            </div>
+            <div className="board-card__actions">
+              <button
+                className="button-secondary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  togglePinBoard(board.id);
+                }}
+              >
+                {board.pinned ? "📌 Закреплено" : "📍 Закрепить"}
+              </button>
+              <button
+                className="button-danger"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteBoard(board.id);
+                }}
+              >
+                Удалить
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {isCreateBoardModalOpen && (
+        <NameModal
+          title="Создать доску"
+          value={newBoardTitle}
+          placeholder="Название доски"
+          onChange={setNewBoardTitle}
+          onClose={() => {
+            setIsCreateBoardModalOpen(false);
+            setNewBoardTitle("");
+          }}
+          onSave={addBoard}
+          saveLabel="Создать"
+        />
+      )}
+    </div>
+  );
+}
+
+function NameModal({ title, value, placeholder, onChange, onClose, onSave, saveLabel }) {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content modal-content--compact">
+        <h3>{title}</h3>
+        <input
+          className="modal-field"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          autoFocus
+        />
+        <div className="modal-actions">
+          <button className="button-secondary" onClick={onClose}>Отмена</button>
+          <button className="button-primary" onClick={onSave} disabled={!value.trim()}>
+            {saveLabel}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
