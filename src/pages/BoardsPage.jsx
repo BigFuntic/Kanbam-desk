@@ -61,18 +61,29 @@ function BoardsPage() {
   };
 
   const togglePinBoard = (boardId) => {
+    const toggledBoard = boards.find((b) => b.id === boardId);
+    if (!toggledBoard) return;
+
+    const willBePinned = !toggledBoard.pinned;
+
     let updated = boards.map((b) => {
       if (b.id === boardId) {
-        return { ...b, pinned: !b.pinned };
+        return { ...b, pinned: willBePinned };
       }
       return b;
     });
   
     // разделяем
-    const pinned = updated.filter((b) => b.pinned);
+    let pinned = updated.filter((b) => b.pinned);
     const unpinned = updated
       .filter((b) => !b.pinned)
       .sort((a, b) => a.order - b.order);
+
+    if (willBePinned) {
+      const newlyPinned = pinned.find((b) => b.id === boardId);
+      const otherPinned = pinned.filter((b) => b.id !== boardId);
+      pinned = newlyPinned ? [newlyPinned, ...otherPinned] : otherPinned;
+    }
   
     // 👇 закрепленные всегда сверху
     updated = [...pinned, ...unpinned];
