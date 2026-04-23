@@ -118,6 +118,9 @@ function BoardsPage() {
           <button className="button-primary" onClick={() => setIsCreateBoardModalOpen(true)}>
             Создать доску
           </button>
+          <button className="button-secondary" onClick={() => navigate("/settings")}>
+            Настройки
+          </button>
           <button
             className="button-secondary"
             onClick={() => {

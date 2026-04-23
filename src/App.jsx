@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import BoardsPage from "./pages/BoardsPage";
 import BoardPage from "./pages/BoardPage";
 import LoginPage from "./pages/LoginPage";
+import SettingsPage from "./pages/SettingsPage";
 import { getSessionUser } from "./sessionUser";
 
 function App() {
@@ -20,6 +21,11 @@ function App() {
       <Route
         path="/board/:id"
         element={user ? <BoardPage /> : <Navigate to="/login" />}
+      />
+
+      <Route
+        path="/settings"
+        element={user ? <SettingsPage /> : <Navigate to="/login" />}
       />
 
       <Route path="/login" element={<LoginPage />} />

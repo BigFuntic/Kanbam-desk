@@ -286,3 +286,29 @@ textarea:focus-visible {
   gap: 8px;
   margin-top: 14px;
 }
+
+.settings-card {
+  background: linear-gradient(180deg, #ffffff 0%, #fbf9ff 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.settings-card h3 {
+  margin-bottom: 6px;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.settings-status {
+  margin-top: 10px;
+  color: var(--success);
+  font-weight: 600;
+}
