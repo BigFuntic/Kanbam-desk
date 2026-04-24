@@ -16,12 +16,29 @@ function SettingsPage() {
     }
   }, [navigate]);
 
-  const saveName = () => {
+  const saveName = async () => {
     const trimmedName = name.trim();
     if (!trimmedName) return;
+    const currentUser = getSessionUser();
+    if (!currentUser) return;
 
+    if (trimmedName === currentUser) {
+      setStatus("Имя не изменилось.");
+      return;
+    }
+
+    const allBoards = await getBoards();
+    const renamedBoards = allBoards.map((board) => {
+      if (board.user === currentUser) {
+        return { ...board, user: trimmedName };
+      }
+      return board;
+    });
+
+    await saveBoards(renamedBoards);
+    channel.postMessage(renamedBoards);
     setSessionUser(trimmedName);
-    setStatus("Имя сохранено.");
+    setStatus("Имя обновлено для текущего пользователя.");
   };
 
   const clearMyBoards = async () => {
