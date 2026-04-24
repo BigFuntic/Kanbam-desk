@@ -34,6 +34,15 @@ function BoardPage() {
     return maxColumnId + 1;
   };
 
+  const getNextColumnOrder = (columns = []) => {
+    const maxOrder = columns.reduce((maxValue, column, index) => {
+      const fallbackOrder = index;
+      const columnOrder = typeof column.order === "number" ? column.order : fallbackOrder;
+      return columnOrder > maxValue ? columnOrder : maxValue;
+    }, -1);
+    return maxOrder + 1;
+  };
+
   useEffect(() => {
     getBoards().then((data) => {
       const foundBoard = data.find((b) => b.id == id);
@@ -65,7 +74,16 @@ function BoardPage() {
       if (b.id == id) {
         return {
           ...b,
-          columns: [...(b.columns || []), { id: getNextColumnId(b.columns), title: name, cards: [] }]
+          columns: [
+            ...(b.columns || []),
+            {
+              id: getNextColumnId(b.columns),
+              title: name,
+              cards: [],
+              pinned: false,
+              order: getNextColumnOrder(b.columns || [])
+            }
+          ]
         };
       }
       return b;
@@ -175,6 +193,48 @@ function BoardPage() {
       return b;
     });
   
+    saveAndUpdate(updated);
+  };
+
+  const togglePinColumn = (columnId) => {
+    const data = JSON.parse(localStorage.getItem("boards")) || [];
+
+    const updated = data.map((b) => {
+      if (b.id != id) return b;
+
+      const targetColumn = (b.columns || []).find((col) => col.id === columnId);
+      if (!targetColumn) return b;
+
+      const willBePinned = !targetColumn.pinned;
+      const columnsWithOrder = (b.columns || []).map((col, index) => {
+        if (typeof col.order === "number") return col;
+        return { ...col, order: index };
+      });
+
+      const toggledColumns = columnsWithOrder.map((col) => {
+        if (col.id === columnId) {
+          return { ...col, pinned: willBePinned };
+        }
+        return col;
+      });
+
+      let pinned = toggledColumns.filter((col) => col.pinned);
+      const unpinned = toggledColumns
+        .filter((col) => !col.pinned)
+        .sort((a, b) => a.order - b.order);
+
+      if (willBePinned) {
+        const newlyPinned = pinned.find((col) => col.id === columnId);
+        const otherPinned = pinned.filter((col) => col.id !== columnId);
+        pinned = newlyPinned ? [newlyPinned, ...otherPinned] : otherPinned;
+      }
+
+      return {
+        ...b,
+        columns: [...pinned, ...unpinned]
+      };
+    });
+
     saveAndUpdate(updated);
   };
 
@@ -298,6 +358,9 @@ function BoardPage() {
             <Column key={col.id} col={col}>
               <button className="button-secondary" onClick={() => openCreateCardModal(col.id)}>
                 Добавить карточку
+              </button>
+              <button className="button-secondary" onClick={() => togglePinColumn(col.id)}>
+                {col.pinned ? "📌 Закреплена" : "📍 Закрепить"}
               </button>
 
               <button className="button-danger" onClick={() => deleteColumn(col.id)}>
