@@ -503,7 +503,7 @@ function BoardPage() {
         setActiveCard(null);
       }}
     >
-      <div className="page-shell">
+      <div className="page-shell page-shell--board">
         <div className="page-header">
           <div>
             <h1 className="page-title">{board.title}</h1>
@@ -676,7 +676,7 @@ function Column({ col, children }) {
   return (
     <div
       ref={setNodeRef}
-      className="column"
+      className={`column ${col.pinned ? "column--pinned" : ""}`}
     >
       <div className="column-header">
         <h3>{col.title}</h3>
