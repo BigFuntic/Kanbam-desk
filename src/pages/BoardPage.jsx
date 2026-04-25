@@ -521,9 +521,19 @@ function Card({ card, col, editCard, deleteCard, openEditModal }) {
       </div>
 
       {card.images?.length > 0 && (
-        <div className="card-meta">
+        <div style={{ marginTop: 8 }}>
           {card.images.map((img, i) => (
-            <img key={i} src={img} width={50} style={{ marginRight: 5, borderRadius: 6 }} />
+            <img
+              key={i}
+              src={img}
+              style={{
+                width: "100%",
+                maxHeight: 200,
+                objectFit: "cover",
+                borderRadius: 8,
+                marginBottom: 6
+              }}
+            />
           ))}
         </div>
       )}
