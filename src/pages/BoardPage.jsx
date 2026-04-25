@@ -6,6 +6,7 @@ import { DragOverlay } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { channel } from "./broadcast";
 import { getBoards, saveBoards } from "../api";
+import { useRef } from "react";
 
 function BoardPage() {
   const { id } = useParams();
@@ -17,6 +18,7 @@ function BoardPage() {
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState("");
   const [activeCard, setActiveCard] = useState(null);
+  const [isDraggingBoard, setIsDraggingBoard] = useState(false);
 
   const getNextCardId = (columns = []) => {
     const maxCardId = columns.reduce((maxId, column) => {
@@ -435,6 +437,36 @@ function BoardPage() {
     setIsModalOpen(false);
   };
 
+  const boardRef = useRef(null);
+  const isDraggingRef = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
+  const onMouseDown = (e) => {
+    setIsDraggingBoard(true);
+    isDraggingRef.current = true;
+    startX.current = e.pageX - boardRef.current.offsetLeft;
+    scrollLeft.current = boardRef.current.scrollLeft;
+  };
+  
+  const onMouseMove = (e) => {
+    if (!isDraggingRef.current || activeCard) return;
+  
+    const x = e.pageX - boardRef.current.offsetLeft;
+    const walk = (x - startX.current) * 1.2; // скорость
+    boardRef.current.scrollLeft = scrollLeft.current - walk;
+  };
+  
+  const onMouseUp = () => {
+    setIsDraggingBoard(false);
+    isDraggingRef.current = false;
+  };
+  
+  const onMouseLeave = () => {
+    setIsDraggingBoard(false);
+    isDraggingRef.current = false;
+  };
+
   if (!board) return <div>Загрузка...</div>;
 
   return (
@@ -462,19 +494,28 @@ function BoardPage() {
           </div>
         </div>
 
-        <div className="board-layout">
+        <div
+          className={`board-layout ${isDraggingBoard ? "no-select" : ""}`}
+          ref={boardRef}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseLeave}
+        >
           {board.columns?.map((col) => (
             <Column key={col.id} col={col}>
-              <button className="button-secondary" onClick={() => openCreateCardModal(col.id)}>
-                Добавить карточку
-              </button>
-              <button className="button-secondary" onClick={() => togglePinColumn(col.id)}>
-                {col.pinned ? "📌 Закреплена" : "📍 Закрепить"}
-              </button>
+              <div className="column-actions">
+                <button className="button-secondary" onClick={() => openCreateCardModal(col.id)}>
+                  Добавить карточку
+                </button>
+                <button className="button-secondary" onClick={() => togglePinColumn(col.id)}>
+                  {col.pinned ? "📌 Закреплена" : "📍 Закрепить"}
+                </button>
 
-              <button className="button-danger" onClick={() => deleteColumn(col.id)}>
-                Удалить колонку
-              </button>
+                <button className="button-danger" onClick={() => deleteColumn(col.id)}>
+                  Удалить колонку
+                </button>
+              </div>
 
               <SortableContext
                 items={(col.cards || []).map((card) => `card-${card.id}`)}

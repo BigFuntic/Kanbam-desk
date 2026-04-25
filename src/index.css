@@ -204,18 +204,41 @@ textarea:focus-visible {
 }
 
 .board-layout {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-  gap: 14px;
-  align-items: start;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding: 10px 0;
+  white-space: nowrap;
+  cursor: grab;
+}
+
+.board-layout:active {
+  cursor: grabbing;
+}
+
+.board-layout::-webkit-scrollbar {
+  height: 8px;
+}
+
+.board-layout::-webkit-scrollbar-thumb {
+  background: #d1c4ff;
+  border-radius: 4px;
 }
 
 .column {
   background: linear-gradient(180deg, #ffffff 0%, var(--surface-soft) 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  align-self: flex-start;
   padding: 12px;
   min-height: 300px;
+  min-width: 280px;
+  max-width: 280px;
+  flex-shrink: 0;
+  white-space: normal;
 }
 
 .column-header {
@@ -226,6 +249,16 @@ textarea:focus-visible {
   margin-bottom: 12px;
 }
 
+.column-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.no-select {
+  user-select: none;
+}
+
 .card-item {
   background: linear-gradient(180deg, #ffffff 0%, #faf8ff 100%);
   border: 1px solid var(--border);
@@ -233,6 +266,8 @@ textarea:focus-visible {
   padding: 10px;
   margin-top: 8px;
   box-shadow: var(--shadow-sm);
+  white-space: normal;
+  word-break: break-word;
 }
 
 .card-title {
