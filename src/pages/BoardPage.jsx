@@ -67,7 +67,6 @@ function BoardPage() {
     };
   }, [id]);
 
-  // 2. Функция добавления колонки
   const addColumn = () => {
     const name = newColumnTitle.trim();
     if (!name) return;
@@ -104,14 +103,14 @@ function BoardPage() {
       description: "",
       deadline: "", 
       columnId,
-      images: []
+      images: [],
+      completed: false // ДОБАВЛЕНО: статус по умолчанию
     });
   
     setModalMode("create");
     setIsModalOpen(true);
   };
 
-  // Вспомогательная функция для сохранения, чтобы не дублировать код
   const saveAndUpdate = async (updatedData) => {
     const newBoard = updatedData.find((b) => b.id == id);
     setBoard(newBoard);
@@ -142,6 +141,39 @@ function BoardPage() {
                       title: newTitle || card.title,
                       description: newDescription || card.description,
                       deadline: newDeadline || card.deadline
+                    };
+                  }
+                  return card;
+                })
+              };
+            }
+            return col;
+          })
+        };
+      }
+      return b;
+    });
+  
+    saveAndUpdate(updated);
+  };
+
+  // ДОБАВЛЕНО: Функция для переключения чекбокса
+  const toggleCardCompletion = (columnId, cardId) => {
+    const data = JSON.parse(localStorage.getItem("boards")) || [];
+  
+    const updated = data.map((b) => {
+      if (b.id == id) {
+        return {
+          ...b,
+          columns: b.columns.map((col) => {
+            if (col.id === columnId) {
+              return {
+                ...col,
+                cards: col.cards.map((card) => {
+                  if (card.id === cardId) {
+                    return {
+                      ...card,
+                      completed: !card.completed // Меняем статус на противоположный
                     };
                   }
                   return card;
@@ -261,7 +293,6 @@ function BoardPage() {
     const activeId = String(active.id);
     if (!activeId.startsWith("card-")) return;
   
-    // 🔙 Если отпустили в пустом месте (нет valid droppable) — ничего не делаем, карточка визуально вернётся сама
     if (!over) {
       setActiveCard(null);
       return;
@@ -271,7 +302,6 @@ function BoardPage() {
     const isColumn = overId.startsWith("column-");
     const isCard = overId.startsWith("card-");
   
-    // 🔙 Если отпустили не над колонкой и не над карточкой — отменяем перемещение
     if (!isColumn && !isCard) {
       setActiveCard(null);
       return;
@@ -303,7 +333,6 @@ function BoardPage() {
     const sourceIndex = source.cards.findIndex((card) => card.id === activeCardId);
     if (sourceIndex < 0) return;
   
-    // Перемещение внутри той же колонки
     if (source.id === target.id && overCardId) {
       const targetIndex = source.cards.findIndex((card) => card.id === overCardId);
       if (targetIndex < 0) return;
@@ -321,10 +350,8 @@ function BoardPage() {
       return;
     }
   
-    // Убираем карточку из исходной колонки
     source.cards = source.cards.filter((card) => card.id !== activeCardId);
   
-    // Вставляем в новую позицию
     if (overCardId) {
       const overIndex = target.cards.findIndex((card) => card.id === overCardId);
       const isBelowOverItem =
@@ -407,7 +434,6 @@ function BoardPage() {
           columns: b.columns.map((col) => {
             if (col.id === selectedCard.columnId) {
               
-              // 👉 ЕСЛИ СОЗДАНИЕ
               if (modalMode === "create") {
                 return {
                   ...col,
@@ -415,7 +441,6 @@ function BoardPage() {
                 };
               }
   
-              // 👉 ЕСЛИ РЕДАКТИРОВАНИЕ
               return {
                 ...col,
                 cards: col.cards.map((card) => {
@@ -453,7 +478,7 @@ function BoardPage() {
     if (!isDraggingRef.current || activeCard) return;
   
     const x = e.pageX - boardRef.current.offsetLeft;
-    const walk = (x - startX.current) * 1.2; // скорость
+    const walk = (x - startX.current) * 1.2;
     boardRef.current.scrollLeft = scrollLeft.current - walk;
   };
   
@@ -530,6 +555,7 @@ function BoardPage() {
                       editCard={editCard}
                       deleteCard={deleteCard}
                       openEditModal={openEditModal}
+                      toggleCardCompletion={toggleCardCompletion} // ДОБАВЛЕНО: пробрасываем функцию
                     />
                   ))}
                 </div>
@@ -571,53 +597,56 @@ function BoardPage() {
         ) : null}
       </DragOverlay>
     </DndContext>
-
-    
   );
 }
 
-function Card({ card, col, editCard, deleteCard, openEditModal }) {
+// ИЗМЕНЕНО: Компонент Card обновлен
+function Card({ card, col, editCard, deleteCard, openEditModal, toggleCardCompletion }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `card-${card.id}`
   });
 
   const style = {
     transition,
-    opacity: isDragging ? 0.3 : 1
+    // Если перетаскиваем - 0.3, если выполнено - 0.5 (потускнение), иначе 1
+    opacity: isDragging ? 0.3 : (card.completed ? 0.5 : 1)
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="card-item">
-      <div
-        {...listeners}
-        {...attributes}
-        style={{ cursor: "grab" }}
-      >
-        <span className="card-title" onClick={() => editCard(col.id, card.id)}>
-          {card.title}
-        </span>
+    <div ref={setNodeRef} style={style} className={`card-item ${card.completed ? "card-item--completed" : ""}`}>
+      <div className="card-header-row">
+        
+        <input 
+          type="checkbox" 
+          checked={!!card.completed}
+          onChange={() => toggleCardCompletion(col.id, card.id)}
+          className="card-checkbox"
+        />
+
+        <div
+          {...listeners}
+          {...attributes}
+          className="card-title-wrap"
+        >
+          <span 
+            className={`card-title ${card.completed ? "card-title--completed" : ""}`} 
+            onClick={() => editCard(col.id, card.id)}
+          >
+            {card.title}
+          </span>
+        </div>
       </div>
 
       {card.images?.length > 0 && (
-        <div style={{ marginTop: 8 }}>
+        <div className="card-images">
           {card.images.map((img, i) => (
-            <img
-              key={i}
-              src={img}
-              style={{
-                width: "100%",
-                maxHeight: 200,
-                objectFit: "cover",
-                borderRadius: 8,
-                marginBottom: 6
-              }}
-            />
+            <img key={i} src={img} className="card-image" />
           ))}
         </div>
       )}
 
       <button
-        className="button-secondary"
+        className="button-secondary card-edit-btn"
         onClick={(e) => {
           e.stopPropagation();
           openEditModal(card, col.id);
@@ -638,6 +667,7 @@ function Card({ card, col, editCard, deleteCard, openEditModal }) {
     </div>
   );
 }
+
 function Column({ col, children }) {
   const { setNodeRef } = useDroppable({
     id: `column-${col.id}`
@@ -677,11 +707,7 @@ function Modal({ card, setCard, onClose, onSave }) {
           placeholder="Название"
         />
 
-        {error && (
-          <div style={{ color: "red", fontSize: 12 }}>
-            {error}
-          </div>
-        )}
+        {error && <div className="modal-error">{error}</div>} 
 
         <textarea
           className="modal-field"
@@ -716,19 +742,14 @@ function Modal({ card, setCard, onClose, onSave }) {
 
         <div className="card-meta">
           {card.images?.map((img, index) => (
-            <div key={index} style={{ position: "relative", marginBottom: 5 }}>
-              <img src={img} width={100} style={{ borderRadius: 8 }} />
+            <div key={index} className="modal-image-wrap">
+              <img src={img} width={100} className="modal-image" />
 
               <button
-                className="button-danger"
+                className="button-danger modal-image-delete"
                 onClick={() => {
                   const newImages = card.images.filter((_, i) => i !== index);
                   setCard({ ...card, images: newImages });
-                }}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  right: 0
                 }}
               >
                 ❌
@@ -760,10 +781,7 @@ function Modal({ card, setCard, onClose, onSave }) {
 
           <button
             className="button-primary"
-            style={{
-              opacity: card.title.trim() ? 1 : 0.5,
-              cursor: card.title.trim() ? "pointer" : "not-allowed"
-            }}
+            disabled={!card.title.trim()}
             onClick={() => {
               if (!card.title.trim()) {
                 setError("Название обязательно");
