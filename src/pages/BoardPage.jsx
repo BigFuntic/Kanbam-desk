@@ -353,7 +353,35 @@ function BoardPage() {
     setIsModalOpen(true);
   };
   
-  const saveCardChanges = () => {
+  const saveCardChanges = (mode = "save") => {
+    if (mode === "delete") {
+      const data = JSON.parse(localStorage.getItem("boards")) || [];
+    
+      const updated = data.map((b) => {
+        if (b.id == id) {
+          return {
+            ...b,
+            columns: b.columns.map((col) => {
+              if (col.id === selectedCard.columnId) {
+                return {
+                  ...col,
+                  cards: col.cards.filter(
+                    (card) => card.id !== selectedCard.id
+                  )
+                };
+              }
+              return col;
+            })
+          };
+        }
+        return b;
+      });
+    
+      saveAndUpdate(updated);
+      setIsModalOpen(false);
+      return;
+    }
+
     if (!selectedCard.title.trim()) {
       alert("Введите название карточки");
       return;
@@ -539,16 +567,6 @@ function Card({ card, col, editCard, deleteCard, openEditModal }) {
       )}
 
       <button
-        className="button-danger"
-        onClick={(e) => {
-          e.stopPropagation();
-          deleteCard(col.id, card.id);
-        }}
-      >
-        Удалить
-      </button>
-
-      <button
         className="button-secondary"
         onClick={(e) => {
           e.stopPropagation();
@@ -564,7 +582,7 @@ function Card({ card, col, editCard, deleteCard, openEditModal }) {
 
       {card.deadline && (
         <div className="card-meta">
-          ⏰ {card.deadline}
+          ⏰ {new Date(card.deadline).toLocaleDateString()}
         </div>
       )}
     </div>
@@ -671,15 +689,25 @@ function Modal({ card, setCard, onClose, onSave }) {
 
         <input
           className="modal-field"
-          value={card.deadline}
+          type="date"
+          value={card.deadline || ""}
           onChange={(e) =>
             setCard({ ...card, deadline: e.target.value })
           }
-          placeholder="Срок"
         />
 
         <div className="modal-actions">
           <button className="button-secondary" onClick={onClose}>Закрыть</button>
+
+          <button className="button-danger" onClick={() => {
+            const confirmDelete = window.confirm("Удалить карточку?");
+            if (!confirmDelete) return;
+
+            onSave("delete");
+          }}>
+            Удалить
+          </button>
+
           <button
             className="button-primary"
             style={{
