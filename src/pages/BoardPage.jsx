@@ -354,8 +354,13 @@ function BoardPage() {
   };
   
   const saveCardChanges = () => {
+    if (!selectedCard.title.trim()) {
+      alert("Введите название карточки");
+      return;
+    }
+
     const data = JSON.parse(localStorage.getItem("boards")) || [];
-  
+
     const updated = data.map((b) => {
       if (b.id == id) {
         return {
@@ -574,6 +579,7 @@ function Column({ col, children }) {
 }
 
 function Modal({ card, setCard, onClose, onSave }) {
+  const [error, setError] = useState("");
   if (!card) return null;
 
   return (
@@ -586,11 +592,18 @@ function Modal({ card, setCard, onClose, onSave }) {
         <input
           className="modal-field"
           value={card.title}
-          onChange={(e) =>
-            setCard({ ...card, title: e.target.value })
-          }
+          onChange={(e) => {
+            setCard({ ...card, title: e.target.value });
+            setError("");
+          }}
           placeholder="Название"
         />
+
+        {error && (
+          <div style={{ color: "red", fontSize: 12 }}>
+            {error}
+          </div>
+        )}
 
         <textarea
           className="modal-field"
@@ -657,7 +670,24 @@ function Modal({ card, setCard, onClose, onSave }) {
 
         <div className="modal-actions">
           <button className="button-secondary" onClick={onClose}>Закрыть</button>
-          <button className="button-primary" onClick={onSave}>Сохранить</button>
+          <button
+            className="button-primary"
+            style={{
+              opacity: card.title.trim() ? 1 : 0.5,
+              cursor: card.title.trim() ? "pointer" : "not-allowed"
+            }}
+            onClick={() => {
+              if (!card.title.trim()) {
+                setError("Название обязательно");
+                return;
+              }
+
+              setError("");
+              onSave();
+            }}
+          >
+            Сохранить
+          </button>
         </div>
       </div>
     </div>
