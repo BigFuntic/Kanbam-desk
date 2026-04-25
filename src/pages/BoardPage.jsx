@@ -1,9 +1,9 @@
 import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { DndContext } from "@dnd-kit/core";
-import { useDraggable } from "@dnd-kit/core";
-import { useDroppable } from "@dnd-kit/core";
+import { DndContext, closestCenter, useDroppable } from "@dnd-kit/core";
+import { DragOverlay } from "@dnd-kit/core";
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { channel } from "./broadcast";
 import { getBoards, saveBoards } from "../api";
 
@@ -16,6 +16,7 @@ function BoardPage() {
   const [modalMode, setModalMode] = useState("edit");
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState("");
+  const [activeCard, setActiveCard] = useState(null);
 
   const getNextCardId = (columns = []) => {
     const maxCardId = columns.reduce((maxId, column) => {
@@ -110,12 +111,11 @@ function BoardPage() {
 
   // Вспомогательная функция для сохранения, чтобы не дублировать код
   const saveAndUpdate = async (updatedData) => {
-    await saveBoards(updatedData);
-  
     const newBoard = updatedData.find((b) => b.id == id);
     setBoard(newBoard);
-  
     channel.postMessage(updatedData);
+
+    await saveBoards(updatedData);
   };
 
   const editCard = (columnId, cardId) => {
@@ -238,52 +238,112 @@ function BoardPage() {
     saveAndUpdate(updated);
   };
 
+  const handleDragStart = (event) => {
+    const { active } = event;
+
+    const activeId = String(active.id);
+    if (!activeId.startsWith("card-")) return;
+
+    const cardId = Number(activeId.replace("card-", ""));
+
+    const found = board.columns
+      .flatMap(col => col.cards || [])
+      .find(c => c.id === cardId);
+
+    setActiveCard(found);
+  };
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
   
     if (!over) return;
-  
-    const activeId = active.id;
-    const overColumnId = over.id;
-  
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    if (!activeId.startsWith("card-")) return;
+
+    const activeCardId = Number(activeId.replace("card-", ""));
+    const overCardId = overId.startsWith("card-") ? Number(overId.replace("card-", "")) : null;
+    const overColumnId = overId.startsWith("column-") ? Number(overId.replace("column-", "")) : null;
+
+    const sourceColumn = board.columns.find((col) =>
+      (col.cards || []).some((card) => card.id === activeCardId)
+    );
+    if (!sourceColumn) return;
+
+    const targetColumn = overCardId
+      ? board.columns.find((col) => (col.cards || []).some((card) => card.id === overCardId))
+      : board.columns.find((col) => col.id === overColumnId);
+    if (!targetColumn) return;
+
+    const movedCard = sourceColumn.cards.find((card) => card.id === activeCardId);
+    if (!movedCard) return;
+
+    const updatedColumns = board.columns.map((col) => ({ ...col, cards: [...(col.cards || [])] }));
+    const source = updatedColumns.find((col) => col.id === sourceColumn.id);
+    const target = updatedColumns.find((col) => col.id === targetColumn.id);
+    if (!source || !target) return;
+
+    const sourceIndex = source.cards.findIndex((card) => card.id === activeCardId);
+    if (sourceIndex < 0) return;
+
+    // Для перемещения в пределах одной колонки используем штатный arrayMove.
+    // Это устраняет смещение "на позицию выше".
+    if (source.id === target.id && overCardId) {
+      const targetIndex = source.cards.findIndex((card) => card.id === overCardId);
+      if (targetIndex < 0) return;
+      source.cards = arrayMove(source.cards, sourceIndex, targetIndex);
+
+      const data = JSON.parse(localStorage.getItem("boards")) || [];
+      const updated = data.map((b) => {
+        if (b.id == id) {
+          return { ...b, columns: updatedColumns };
+        }
+        return b;
+      });
+
+      saveAndUpdate(updated);
+      return;
+    }
+
+    source.cards = source.cards.filter((card) => card.id !== activeCardId);
+
+    if (overCardId) {
+      const overIndex = target.cards.findIndex((card) => card.id === overCardId);
+      const isBelowOverItem =
+        active.rect.current.translated &&
+        active.rect.current.translated.top > over.rect.top + over.rect.height / 2;
+
+      let insertIndex = overIndex >= 0 ? overIndex : target.cards.length;
+
+      if (source.id === target.id && sourceIndex >= 0 && sourceIndex < overIndex) {
+        insertIndex -= 1;
+      }
+
+      if (isBelowOverItem) {
+        insertIndex += 1;
+      }
+
+      if (insertIndex < 0) {
+        insertIndex = 0;
+      }
+      if (insertIndex > target.cards.length) {
+        insertIndex = target.cards.length;
+      }
+
+      target.cards.splice(insertIndex, 0, movedCard);
+    } else {
+      target.cards.push(movedCard);
+    }
+
     const data = JSON.parse(localStorage.getItem("boards")) || [];
-  
     const updated = data.map((b) => {
       if (b.id == id) {
-        let movedCard = null;
-  
-        // 1. удалить карточку из старой колонки
-        const newColumns = b.columns.map((col) => {
-          const found = col.cards.find((c) => c.id === activeId);
-  
-          if (found) {
-            movedCard = found;
-            return {
-              ...col,
-              cards: col.cards.filter((c) => c.id !== activeId)
-            };
-          }
-  
-          return col;
-        });
-  
-        // 2. добавить в новую колонку
-        return {
-          ...b,
-          columns: newColumns.map((col) => {
-            if (col.id === overColumnId) {
-              return {
-                ...col,
-                cards: [...col.cards, movedCard]
-              };
-            }
-            return col;
-          })
-        };
+        return { ...b, columns: updatedColumns };
       }
       return b;
     });
-  
+
     saveAndUpdate(updated);
   };
 
@@ -336,7 +396,14 @@ function BoardPage() {
   if (!board) return <div>Загрузка...</div>;
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
+    <DndContext
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={(e) => {
+        handleDragEnd(e);
+        setActiveCard(null);
+      }}
+    >
       <div className="page-shell">
         <div className="page-header">
           <div>
@@ -367,18 +434,23 @@ function BoardPage() {
                 Удалить колонку
               </button>
 
-              <div>
-                {col.cards?.map((card) => (
-                  <Card
-                    key={card.id}
-                    card={card}
-                    col={col}
-                    editCard={editCard}
-                    deleteCard={deleteCard}
-                    openEditModal={openEditModal}
-                  />
-                ))}
-              </div>
+              <SortableContext
+                items={(col.cards || []).map((card) => `card-${card.id}`)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div>
+                  {col.cards?.map((card) => (
+                    <Card
+                      key={card.id}
+                      card={card}
+                      col={col}
+                      editCard={editCard}
+                      deleteCard={deleteCard}
+                      openEditModal={openEditModal}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
             </Column>
           ))}
         </div>
@@ -407,19 +479,28 @@ function BoardPage() {
           />
         )}
       </div>
+
+      <DragOverlay>
+        {activeCard ? (
+          <div className="card-item" style={{ opacity: 0.8 }}>
+            {activeCard.title}
+          </div>
+        ) : null}
+      </DragOverlay>
     </DndContext>
+
+    
   );
 }
 
 function Card({ card, col, editCard, deleteCard, openEditModal }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: card.id
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: `card-${card.id}`
   });
 
   const style = {
-    transform: transform
-      ? `translate(${transform.x}px, ${transform.y}px)`
-      : ""
+    transition,
+    opacity: isDragging ? 0.3 : 1
   };
 
   return (
@@ -476,7 +557,7 @@ function Card({ card, col, editCard, deleteCard, openEditModal }) {
 }
 function Column({ col, children }) {
   const { setNodeRef } = useDroppable({
-    id: col.id
+    id: `column-${col.id}`
   });
 
   return (
