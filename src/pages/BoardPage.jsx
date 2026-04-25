@@ -256,44 +256,57 @@ function BoardPage() {
   const handleDragEnd = (event) => {
     const { active, over } = event;
   
-    if (!over) return;
-
     const activeId = String(active.id);
-    const overId = String(over.id);
     if (!activeId.startsWith("card-")) return;
-
+  
+    // 🔙 Если отпустили в пустом месте (нет valid droppable) — ничего не делаем, карточка визуально вернётся сама
+    if (!over) {
+      setActiveCard(null);
+      return;
+    }
+  
+    const overId = String(over.id);
+    const isColumn = overId.startsWith("column-");
+    const isCard = overId.startsWith("card-");
+  
+    // 🔙 Если отпустили не над колонкой и не над карточкой — отменяем перемещение
+    if (!isColumn && !isCard) {
+      setActiveCard(null);
+      return;
+    }
+  
     const activeCardId = Number(activeId.replace("card-", ""));
-    const overCardId = overId.startsWith("card-") ? Number(overId.replace("card-", "")) : null;
-    const overColumnId = overId.startsWith("column-") ? Number(overId.replace("column-", "")) : null;
-
+    const overCardId = isCard ? Number(overId.replace("card-", "")) : null;
+    const overColumnId = isColumn ? Number(overId.replace("column-", "")) : null;
+  
     const sourceColumn = board.columns.find((col) =>
       (col.cards || []).some((card) => card.id === activeCardId)
     );
     if (!sourceColumn) return;
-
+  
     const targetColumn = overCardId
       ? board.columns.find((col) => (col.cards || []).some((card) => card.id === overCardId))
       : board.columns.find((col) => col.id === overColumnId);
+      
     if (!targetColumn) return;
-
+  
     const movedCard = sourceColumn.cards.find((card) => card.id === activeCardId);
     if (!movedCard) return;
-
+  
     const updatedColumns = board.columns.map((col) => ({ ...col, cards: [...(col.cards || [])] }));
     const source = updatedColumns.find((col) => col.id === sourceColumn.id);
     const target = updatedColumns.find((col) => col.id === targetColumn.id);
     if (!source || !target) return;
-
+  
     const sourceIndex = source.cards.findIndex((card) => card.id === activeCardId);
     if (sourceIndex < 0) return;
-
-    // Для перемещения в пределах одной колонки используем штатный arrayMove.
-    // Это устраняет смещение "на позицию выше".
+  
+    // Перемещение внутри той же колонки
     if (source.id === target.id && overCardId) {
       const targetIndex = source.cards.findIndex((card) => card.id === overCardId);
       if (targetIndex < 0) return;
       source.cards = arrayMove(source.cards, sourceIndex, targetIndex);
-
+  
       const data = JSON.parse(localStorage.getItem("boards")) || [];
       const updated = data.map((b) => {
         if (b.id == id) {
@@ -301,41 +314,37 @@ function BoardPage() {
         }
         return b;
       });
-
+  
       saveAndUpdate(updated);
       return;
     }
-
+  
+    // Убираем карточку из исходной колонки
     source.cards = source.cards.filter((card) => card.id !== activeCardId);
-
+  
+    // Вставляем в новую позицию
     if (overCardId) {
       const overIndex = target.cards.findIndex((card) => card.id === overCardId);
       const isBelowOverItem =
         active.rect.current.translated &&
         active.rect.current.translated.top > over.rect.top + over.rect.height / 2;
-
+  
       let insertIndex = overIndex >= 0 ? overIndex : target.cards.length;
-
+  
       if (source.id === target.id && sourceIndex >= 0 && sourceIndex < overIndex) {
         insertIndex -= 1;
       }
-
+  
       if (isBelowOverItem) {
         insertIndex += 1;
       }
-
-      if (insertIndex < 0) {
-        insertIndex = 0;
-      }
-      if (insertIndex > target.cards.length) {
-        insertIndex = target.cards.length;
-      }
-
+  
+      insertIndex = Math.max(0, Math.min(insertIndex, target.cards.length));
       target.cards.splice(insertIndex, 0, movedCard);
     } else {
       target.cards.push(movedCard);
     }
-
+  
     const data = JSON.parse(localStorage.getItem("boards")) || [];
     const updated = data.map((b) => {
       if (b.id == id) {
@@ -343,7 +352,7 @@ function BoardPage() {
       }
       return b;
     });
-
+  
     saveAndUpdate(updated);
   };
 
