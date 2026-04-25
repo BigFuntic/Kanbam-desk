@@ -139,7 +139,10 @@ function BoardsPage() {
 
       <div className="boards-grid">
         {myBoards.map((board) => (
-          <div key={board.id} className="board-card">
+          <div
+            key={board.id}
+            className={`board-card ${board.pinned ? "board-card--pinned" : ""}`}
+          >
             <div
               className="board-card__title"
               onClick={() => navigate(`/board/${board.id}`)}
