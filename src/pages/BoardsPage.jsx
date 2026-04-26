@@ -112,7 +112,6 @@ function BoardsPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Мои доски</h1>
-          <p className="page-subtitle">Управляйте задачами в удобном визуальном формате.</p>
         </div>
         <div className="board-card__actions">
           <button className="button-primary" onClick={() => setIsCreateBoardModalOpen(true)}>

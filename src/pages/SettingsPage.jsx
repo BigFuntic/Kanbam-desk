@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { getBoards, saveBoards } from "../api";
 import { channel } from "./broadcast";
 import { clearSessionUser, getSessionUser, setSessionUser } from "../sessionUser";
+import { getTheme, setTheme } from "../theme";
 
 function SettingsPage() {
   const navigate = useNavigate();
   const [name, setName] = useState(() => getSessionUser() || "");
   const [status, setStatus] = useState("");
+  const [theme, setThemeState] = useState(() => getTheme());
 
   useEffect(() => {
     const user = getSessionUser();
@@ -57,6 +59,11 @@ function SettingsPage() {
     navigate("/login");
   };
 
+  const changeTheme = (newTheme) => {
+    setThemeState(newTheme);
+    setTheme(newTheme);
+  };
+
   return (
     <div className="page-shell">
       <div className="page-header">
@@ -94,6 +101,29 @@ function SettingsPage() {
           </button>
           <button className="button-secondary" onClick={logout}>
             Выйти из аккаунта
+          </button>
+        </div>
+      </div>
+
+      <div className="settings-card">
+        <h3>Тема</h3>
+        <p>Выберите внешний вид приложения.</p>
+
+        <div className="settings-actions">
+          <button
+            className="button-secondary"
+            onClick={() => changeTheme("light")}
+            style={{ opacity: theme === "light" ? 1 : 0.6 }}
+          >
+            🌙 Светлая
+          </button>
+
+          <button
+            className="button-primary"
+            onClick={() => changeTheme("crazy")}
+            style={{ opacity: theme === "crazy" ? 1 : 0.6 }}
+          >
+            ⚡ Тёмный киберпанк
           </button>
         </div>
       </div>

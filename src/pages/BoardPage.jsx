@@ -507,7 +507,6 @@ function BoardPage() {
         <div className="page-header">
           <div>
             <h1 className="page-title">{board.title}</h1>
-            <p className="page-subtitle">Перетаскивайте карточки между колонками.</p>
           </div>
           <div className="board-card__actions">
             <button className="button-secondary" onClick={() => navigate("/")}>

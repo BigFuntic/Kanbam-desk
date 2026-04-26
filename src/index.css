@@ -1,4 +1,4 @@
-:root {
+:root[data-theme="light"] {
   --bg: #f7f4ff;
   --surface: #ffffff;
   --surface-soft: #f7fbff;
@@ -10,9 +10,6 @@
   --primary-hover: #6d28d9;
   --danger: #dc2626;
   --success: #059669;
-  --shadow-sm: 0 4px 14px rgba(26, 31, 54, 0.08);
-  --shadow-md: 0 14px 34px rgba(88, 54, 189, 0.2);
-  --radius: 14px;
 }
 
 * {
@@ -461,4 +458,151 @@ textarea:focus-visible {
   margin-top: 10px;
   color: var(--success);
   font-weight: 600;
+}
+
+/* --- Кибербанк тема --- */
+/* --- P.S. Это уже отсебятина, просто хотелось добавить не скучную тему --- */
+:root[data-theme="crazy"] {
+  --bg: #05010a;
+  --surface: #110223; 
+  --surface-soft: #1e053a;
+  --surface-accent: #ff00ff; 
+  
+  --text-primary: #e0f8ff;
+  --text-secondary: #00ffff; 
+
+  --border: #ff0055; 
+
+  --primary: #39ff14; 
+  --primary-hover: #ffffff; 
+
+  --danger: #ff003c;
+  --success: #39ff14;
+}
+
+:root[data-theme="crazy"] body {
+  background-color: var(--bg);
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(255, 0, 255, 0.15) 0, transparent 40%),
+    radial-gradient(circle at 85% 30%, rgba(0, 255, 255, 0.15) 0, transparent 40%),
+    linear-gradient(rgba(255, 0, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;
+}
+
+:root[data-theme="crazy"] .settings-card,
+:root[data-theme="crazy"] .board-card,
+:root[data-theme="crazy"] .column,
+:root[data-theme="crazy"] .card-item {
+  background: rgba(17, 2, 35, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 15px rgba(255, 0, 85, 0.15);
+  transition: all 0.3s ease;
+}
+
+:root[data-theme="crazy"] .board-card:hover,
+:root[data-theme="crazy"] .card-item:hover {
+  border-color: #00ffff;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+:root[data-theme="crazy"] .card-title {
+  color: #fff;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+}
+
+:root[data-theme="crazy"] .button-primary {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.3), inset 0 0 5px rgba(57, 255, 20, 0.3);
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+:root[data-theme="crazy"] .button-primary:hover {
+  background: var(--primary);
+  color: #000;
+  box-shadow: 0 0 20px rgba(57, 255, 20, 0.8);
+  transform: scale(1.02);
+}
+
+:root[data-theme="crazy"] .button-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--text-secondary);
+}
+
+:root[data-theme="crazy"] .button-secondary:hover {
+  background: rgba(0, 255, 255, 0.1);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+:root[data-theme="crazy"] .button-danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  box-shadow: 0 0 8px rgba(255, 0, 60, 0.4);
+}
+
+:root[data-theme="crazy"] .button-danger:hover {
+  background: var(--danger);
+  color: #fff;
+  box-shadow: 0 0 20px rgba(255, 0, 60, 0.8);
+}
+
+:root[data-theme="crazy"] .page-title {
+  color: #fff;
+  text-transform: uppercase;
+  font-style: italic;
+  letter-spacing: 2px;
+  text-shadow: 
+    3px 0px 0px #ff00ff, 
+    -3px 0px 0px #00ffff;
+  animation: glitchText 3s infinite;
+}
+
+:root[data-theme="crazy"] .column--pinned,
+:root[data-theme="crazy"] .board-card--pinned {
+  border: 2px solid #00ffff;
+  background: rgba(0, 255, 255, 0.05);
+  animation: cyberPulse 2s infinite;
+  position: relative;
+}
+
+:root[data-theme="crazy"] .column.pinned::after,
+:root[data-theme="crazy"] .board-card.pinned::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff00ff, #00ffff, #39ff14, #ff00ff);
+  background-size: 200% 200%;
+  filter: blur(6px);
+  opacity: 0.8;
+  z-index: -1;
+  animation: cyberMove 3s linear infinite;
+}
+
+/* --- АНИМАЦИИ --- */
+@keyframes cyberPulse {
+  0% { box-shadow: 0 0 5px rgba(0, 255, 255, 0.5); }
+  50% { box-shadow: 0 0 15px rgba(0, 255, 255, 0.8), inset 0 0 10px rgba(0, 255, 255, 0.3); border-color: #ff00ff; }
+  100% { box-shadow: 0 0 5px rgba(0, 255, 255, 0.5); }
+}
+
+@keyframes cyberMove {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes glitchText {
+  0%, 100% { text-shadow: 3px 0px 0px #ff00ff, -3px 0px 0px #00ffff; }
+  92% { text-shadow: 3px 0px 0px #ff00ff, -3px 0px 0px #00ffff; transform: translate(0, 0); }
+  94% { text-shadow: -3px 2px 0px #ff00ff, 3px -2px 0px #00ffff; transform: translate(-2px, 2px); }
+  96% { text-shadow: 3px -2px 0px #ff00ff, -3px 2px 0px #39ff14; transform: translate(2px, -2px); }
+  98% { text-shadow: -3px 0px 0px #ff00ff, 3px 0px 0px #00ffff; transform: translate(-1px, 1px); }
 }
