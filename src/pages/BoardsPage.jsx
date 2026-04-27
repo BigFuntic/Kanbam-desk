@@ -152,14 +152,14 @@ function BoardsPage() {
               {board.pinned ? "Закреплена вверху списка" : "Обычная доска"}
             </div>
             <div className="board-card__actions">
-              <button
-                className="button-secondary"
+            <button
+                className="button-secondary pin-btn"
                 onClick={(e) => {
                   e.stopPropagation();
                   togglePinBoard(board.id);
                 }}
               >
-                {board.pinned ? "📌 Закреплено" : "📍 Закрепить"}
+                📌
               </button>
               <button
                 className="button-danger"

@@ -528,13 +528,14 @@ function BoardPage() {
           onMouseLeave={onMouseLeave}
         >
           {board.columns?.map((col) => (
-            <Column key={col.id} col={col}>
+            <Column 
+              key={col.id} 
+              col={col} 
+              togglePinColumn={togglePinColumn}
+            >
               <div className="column-actions">
                 <button className="button-secondary" onClick={() => openCreateCardModal(col.id)}>
                   Добавить карточку
-                </button>
-                <button className="button-secondary" onClick={() => togglePinColumn(col.id)}>
-                  {col.pinned ? "📌 Закреплена" : "Закрепить"}
                 </button>
 
                 <button className="button-danger" onClick={() => deleteColumn(col.id)}>
@@ -668,7 +669,7 @@ function Card({ card, col, editCard, deleteCard, openEditModal, toggleCardComple
   );
 }
 
-function Column({ col, children }) {
+function Column({ col, children, togglePinColumn }) {
   const { setNodeRef } = useDroppable({
     id: `column-${col.id}`
   });
@@ -678,9 +679,20 @@ function Column({ col, children }) {
       ref={setNodeRef}
       className={`column ${col.pinned ? "column--pinned" : ""}`}
     >
+      <button
+        className="button-secondary pin-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          togglePinColumn(col.id);
+        }}
+      >
+        📌
+      </button>
+
       <div className="column-header">
         <h3>{col.title}</h3>
       </div>
+
       {children}
     </div>
   );
