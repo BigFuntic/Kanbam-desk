@@ -705,80 +705,81 @@ function Modal({ card, setCard, onClose, onSave }) {
   return (
     <div className="modal-overlay">
       <div className="modal-content">
-        <h3>
-          {card.title ? "Редактировать карточку" : "Создать карточку"}
-        </h3>
+        <div className="modal-body">
+          <h3>
+            {card.title ? "Редактировать карточку" : "Создать карточку"}
+          </h3>
 
-        <input
-          className="modal-field"
-          value={card.title}
-          onChange={(e) => {
-            setCard({ ...card, title: e.target.value });
-            setError("");
-          }}
-          placeholder="Название"
-        />
+          <input
+            className="modal-field"
+            value={card.title}
+            onChange={(e) => {
+              setCard({ ...card, title: e.target.value });
+              setError("");
+            }}
+            placeholder="Название"
+          />
 
-        {error && <div className="modal-error">{error}</div>} 
+          {error && <div className="modal-error">{error}</div>} 
 
-        <textarea
-          className="modal-field"
-          value={card.description}
-          onChange={(e) =>
-            setCard({ ...card, description: e.target.value })
-          }
-          placeholder="Описание"
-        />
+          <textarea
+            className="modal-field"
+            value={card.description}
+            onChange={(e) =>
+              setCard({ ...card, description: e.target.value })
+            }
+            placeholder="Описание"
+          />
 
-        <input
-          className="modal-field"
-          type="file"
-          multiple
-          onChange={(e) => {
-            const files = Array.from(e.target.files);
+          <input
+            className="modal-field"
+            type="file"
+            multiple
+            onChange={(e) => {
+              const files = Array.from(e.target.files);
 
-            files.forEach((file) => {
-              const reader = new FileReader();
+              files.forEach((file) => {
+                const reader = new FileReader();
 
-              reader.onload = () => {
-                setCard((prev) => ({
-                  ...prev,
-                  images: [...(prev.images || []), reader.result]
-                }));
-              };
+                reader.onload = () => {
+                  setCard((prev) => ({
+                    ...prev,
+                    images: [...(prev.images || []), reader.result]
+                  }));
+                };
 
-              reader.readAsDataURL(file);
-            });
-          }}
-        />
+                reader.readAsDataURL(file);
+              });
+            }}
+          />
 
-        <div className="card-meta">
-          {card.images?.map((img, index) => (
-            <div key={index} className="modal-image-wrap">
-              <img src={img} width={100} className="modal-image" />
+          <div className="card-meta">
+            {card.images?.map((img, index) => (
+              <div key={index} className="modal-image-wrap">
+                <img src={img} width={100} className="modal-image" />
 
-              <button
-                className="button-danger modal-image-delete"
-                onClick={() => {
-                  const newImages = card.images.filter((_, i) => i !== index);
-                  setCard({ ...card, images: newImages });
-                }}
-              >
-                ❌
-              </button>
-            </div>
-          ))}
+                <button
+                  className="button-danger modal-image-delete"
+                  onClick={() => {
+                    const newImages = card.images.filter((_, i) => i !== index);
+                    setCard({ ...card, images: newImages });
+                  }}
+                >
+                  ❌
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <input
+            className="modal-field"
+            type="date"
+            value={card.deadline || ""}
+            onChange={(e) =>
+              setCard({ ...card, deadline: e.target.value })
+            }
+          />
         </div>
-
-        <input
-          className="modal-field"
-          type="date"
-          value={card.deadline || ""}
-          onChange={(e) =>
-            setCard({ ...card, deadline: e.target.value })
-          }
-        />
-
         <div className="modal-actions">
           <button className="button-secondary" onClick={onClose}>Закрыть</button>
 
