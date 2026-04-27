@@ -157,37 +157,38 @@ function BoardPage() {
     saveAndUpdate(updated);
   };
 
-  // ДОБАВЛЕНО: Функция для переключения чекбокса
   const toggleCardCompletion = (columnId, cardId) => {
-    const data = JSON.parse(localStorage.getItem("boards")) || [];
+    const updatedColumns = board.columns.map((col) => {
+      if (col.id === columnId) {
+        return {
+          ...col,
+          cards: col.cards.map((card) => {
+            if (card.id === cardId) {
+              return {
+                ...card,
+                completed: !card.completed
+              };
+            }
+            return card;
+          })
+        };
+      }
+      return col;
+    });
   
-    const updated = data.map((b) => {
+    const updatedBoards = JSON.parse(localStorage.getItem("boards")) || [];
+  
+    const final = updatedBoards.map((b) => {
       if (b.id == id) {
         return {
           ...b,
-          columns: b.columns.map((col) => {
-            if (col.id === columnId) {
-              return {
-                ...col,
-                cards: col.cards.map((card) => {
-                  if (card.id === cardId) {
-                    return {
-                      ...card,
-                      completed: !card.completed // Меняем статус на противоположный
-                    };
-                  }
-                  return card;
-                })
-              };
-            }
-            return col;
-          })
+          columns: updatedColumns
         };
       }
       return b;
     });
   
-    saveAndUpdate(updated);
+    saveAndUpdate(final);
   };
 
   const deleteCard = (columnId, cardId) => {
@@ -510,7 +511,7 @@ function BoardPage() {
           </div>
           <div className="board-card__actions">
             <button className="button-secondary" onClick={() => navigate("/")}>
-              ← К доскам
+              К доскам
             </button>
             <button className="button-primary" onClick={() => setIsColumnModalOpen(true)}>
               Добавить колонку
@@ -533,7 +534,7 @@ function BoardPage() {
                   Добавить карточку
                 </button>
                 <button className="button-secondary" onClick={() => togglePinColumn(col.id)}>
-                  {col.pinned ? "📌 Закреплена" : "📍 Закрепить"}
+                  {col.pinned ? "📌 Закреплена" : "Закрепить"}
                 </button>
 
                 <button className="button-danger" onClick={() => deleteColumn(col.id)}>
@@ -554,7 +555,7 @@ function BoardPage() {
                       editCard={editCard}
                       deleteCard={deleteCard}
                       openEditModal={openEditModal}
-                      toggleCardCompletion={toggleCardCompletion} // ДОБАВЛЕНО: пробрасываем функцию
+                      toggleCardCompletion={toggleCardCompletion} 
                     />
                   ))}
                 </div>
@@ -645,13 +646,13 @@ function Card({ card, col, editCard, deleteCard, openEditModal, toggleCardComple
       )}
 
       <button
-        className="button-secondary card-edit-btn"
+        className="card-edit-btn"
         onClick={(e) => {
           e.stopPropagation();
           openEditModal(card, col.id);
         }}
       >
-        Редактировать
+        •••
       </button>
 
       {card.description && (

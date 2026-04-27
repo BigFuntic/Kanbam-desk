@@ -225,7 +225,6 @@ textarea:focus-visible {
   font-size: 16px;
 }
 
-/* лёгкий hover эффект */
 .board-card--pinned:hover {
   transform: translateY(-2px) scale(1.01);
 }
@@ -315,6 +314,8 @@ textarea:focus-visible {
   box-shadow: var(--shadow-sm);
   white-space: normal;
   word-break: break-word;
+  position: relative;
+  padding-bottom: 42px;
 }
 
 .card-title {
@@ -341,6 +342,30 @@ textarea:focus-visible {
 .card-title-wrap {
   cursor: grab;
   flex-grow: 1;
+
+  padding: 6px 8px;
+  border-radius: 8px;
+
+  background: linear-gradient(90deg, #ede9fe 0%, transparent 100%);
+  border-left: 3px solid var(--primary);
+
+  transition: 0.15s ease;
+}
+
+.card-title-wrap:hover {
+  background: linear-gradient(90deg, #ddd6fe 0%, transparent 100%);
+}
+
+.card-title-wrap:active {
+  cursor: grabbing;
+  background: linear-gradient(90deg, #c4b5fd 0%, transparent 100%);
+}
+
+.card-title-wrap::after {
+  content: "⋮⋮";
+  font-size: 12px;
+  margin-left: 6px;
+  opacity: 0.4;
 }
 
 .card-title--completed {
@@ -360,7 +385,33 @@ textarea:focus-visible {
 }
 
 .card-edit-btn {
-  margin-top: 8px;
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+  border: 1px solid var(--border);
+
+  background: #fff;
+  cursor: pointer;
+
+  font-size: 14px;
+  padding: 0;
+
+  box-shadow: var(--shadow-sm);
+  transition: 0.2s ease;
+}
+
+.card-edit-btn:hover {
+  background: var(--surface-soft);
+  transform: scale(1.1);
 }
 
 .card-meta {
@@ -501,6 +552,58 @@ textarea:focus-visible {
   transition: all 0.3s ease;
 }
 
+:root[data-theme="crazy"] .card-item {
+  background: linear-gradient(
+    135deg,
+    rgb(39, 7, 77) 0%,
+    rgb(30, 5, 58) 100%
+  );
+
+  border: 2px solid #ff0055;
+
+  box-shadow: 
+    0 0 10px rgba(255, 0, 85, 0.3),
+    inset 0 0 8px rgba(255, 0, 255, 0.15);
+
+    border-radius: 0;
+
+  clip-path: polygon(
+    0 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
+}
+
+:root[data-theme="crazy"] .card-item::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+
+  width: 12px;
+  height: 12px;
+
+  background: #00ffff;
+  box-shadow: 0 0 8px #00ffff;
+}
+
+:root[data-theme="crazy"] .column {
+  border: 1px solid #ff0055;
+
+  border-radius: 0;
+
+  clip-path: polygon(
+    0 0,
+    calc(100% - 12px) 0,
+    100% 12px,
+    100% 100%,
+    0 100%
+  );
+}
+
 :root[data-theme="crazy"] .board-card:hover,
 :root[data-theme="crazy"] .card-item:hover {
   border-color: #00ffff;
@@ -511,6 +614,53 @@ textarea:focus-visible {
 :root[data-theme="crazy"] .card-title {
   color: #fff;
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+}
+
+:root[data-theme="crazy"] .card-title-wrap {
+  background: linear-gradient(90deg, rgba(255,0,255,0.25), transparent);
+  border-left: 3px solid #00ffff;
+  border-radius: 0;
+
+
+  box-shadow: inset 0 0 8px rgba(0,255,255,0.4);
+
+  position: relative;
+  overflow: hidden;
+}
+
+:root[data-theme="crazy"] .card-title-wrap::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0,255,255,0.4), transparent);
+  animation: dragGlow 2s linear infinite;
+}
+
+:root[data-theme="crazy"] .card-title-wrap:hover {
+  box-shadow: 
+    inset 0 0 12px rgba(0,255,255,0.6),
+    0 0 10px rgba(255,0,255,0.5);
+}
+
+:root[data-theme="crazy"] .card-title-wrap:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+:root[data-theme="crazy"] button {
+  border-radius: 0;
+
+  clip-path: polygon(
+    0 0,
+    calc(100% - 6px) 0,
+    100% 6px,
+    100% 100%,
+    6px 100%,
+    0 calc(100% - 6px)
+  );
 }
 
 :root[data-theme="crazy"] .button-primary {
@@ -587,6 +737,28 @@ textarea:focus-visible {
   animation: cyberMove 3s linear infinite;
 }
 
+:root[data-theme="crazy"] .card-edit-btn {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #00ffff;
+
+  color: #00ffff;
+
+  box-shadow: 
+    0 0 8px rgba(0,255,255,0.6),
+    inset 0 0 5px rgba(0,255,255,0.4);
+}
+
+:root[data-theme="crazy"] .card-edit-btn:hover {
+  background: #00ffff;
+  color: #000;
+
+  box-shadow: 0 0 20px rgba(0,255,255,1);
+}
+
+:root[data-theme="crazy"] .card-image {
+  border-radius: 0px;
+}
+
 /* --- АНИМАЦИИ --- */
 @keyframes cyberPulse {
   0% { box-shadow: 0 0 5px rgba(0, 255, 255, 0.5); }
@@ -605,4 +777,9 @@ textarea:focus-visible {
   94% { text-shadow: -3px 2px 0px #ff00ff, 3px -2px 0px #00ffff; transform: translate(-2px, 2px); }
   96% { text-shadow: 3px -2px 0px #ff00ff, -3px 2px 0px #39ff14; transform: translate(2px, -2px); }
   98% { text-shadow: -3px 0px 0px #ff00ff, 3px 0px 0px #00ffff; transform: translate(-1px, 1px); }
+}
+
+@keyframes dragGlow {
+  0% { left: -50%; }
+  100% { left: 120%; }
 }
