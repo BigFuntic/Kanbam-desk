@@ -63,12 +63,17 @@ function BoardsPage() {
     setIsCreateBoardModalOpen(false);
   };
 
-  const deleteBoard = (boardId) => {
-    const updated = boards.filter((b) => b.id !== boardId);
-
-    setBoards(updated);
-    saveBoards(updated);
-    channel.postMessage(updated);
+  const deleteBoard = async (boardId) => {
+    const confirmDelete = window.confirm("Удалить доску? Это действие нельзя отменить.");
+    if (!confirmDelete) return;
+  
+    const data = JSON.parse(localStorage.getItem("boards")) || [];
+    const updated = data.filter((b) => b.id !== boardId);
+  
+    setBoards(updated);         
+    channel.postMessage(updated);  
+  
+    await saveBoards(updated);
   };
 
   const togglePinBoard = (boardId) => {

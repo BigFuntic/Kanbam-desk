@@ -216,6 +216,10 @@ function BoardPage() {
   };
 
   const deleteColumn = (columnId) => {
+    const confirmDelete = window.confirm("Удалить колонку? Все карточки внутри будут потеряны.");
+  
+    if (!confirmDelete) return;
+  
     const data = JSON.parse(localStorage.getItem("boards")) || [];
   
     const updated = data.map((b) => {
