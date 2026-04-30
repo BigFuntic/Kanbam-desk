@@ -6,9 +6,20 @@ function Modal({ card, setCard, onClose, onSave }) {
   const [error, setError] = useState("");
   if (!card) return null;
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+  
+    if (!card.title.trim()) {
+      setError("Название обязательно");
+      return;
+    }
+  
+    setError("");
+    onSave();
+  };
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
+      <form className="modal-content" onSubmit={handleSubmit}>
         <div className="modal-body">
           <h3>
             {card.title ? "Редактировать карточку" : "Создать карточку"}
@@ -85,34 +96,32 @@ function Modal({ card, setCard, onClose, onSave }) {
           />
         </div>
         <div className="modal-actions">
-          <button className="button-secondary" onClick={onClose}>Закрыть</button>
+          <button type="button" className="button-secondary" onClick={onClose}>
+            Закрыть
+          </button>
 
-          <button className="button-danger" onClick={() => {
-            const confirmDelete = window.confirm("Удалить карточку?");
-            if (!confirmDelete) return;
+          <button 
+            type="button" 
+            className="button-danger" 
+            onClick={() => {
+              const confirmDelete = window.confirm("Удалить карточку?");
+              if (!confirmDelete) return;
 
-            onSave("delete");
-          }}>
+              onSave("delete");
+            }}
+          >
             Удалить
           </button>
 
           <button
+            type="submit"
             className="button-primary"
             disabled={!card.title.trim()}
-            onClick={() => {
-              if (!card.title.trim()) {
-                setError("Название обязательно");
-                return;
-              }
-
-              setError("");
-              onSave();
-            }}
           >
             Сохранить
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

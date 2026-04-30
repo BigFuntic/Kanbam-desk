@@ -18,15 +18,19 @@ function LoginPage() {
       <div className="auth-card">
       <h2>Добро пожаловать</h2>
       <p>Войдите, чтобы продолжить работу с вашими досками.</p>
-      <input
-        className="auth-field"
-        placeholder="Введите имя"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      <button className="button-primary" onClick={handleLogin}>
-        Войти
-      </button>
+      <form onSubmit={handleLogin}>
+        <input
+          className="auth-field"
+          placeholder="Введите имя"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <button 
+          type="submit"
+          className="button-primary">
+          Войти
+        </button>
+      </form>
       </div>
     </div>
   );

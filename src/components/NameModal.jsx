@@ -1,10 +1,19 @@
 import { useState } from "react";
 
 export default function NameModal({ title, value, placeholder, onChange, onClose, onSave, saveLabel }) {
+
+  const handleSubmit = (e) => {
+    e.preventDefault(); 
+    if (value.trim()) {
+      onSave();
+    }
+  };
+
   return (
     <div className="modal-overlay">
-      <div className="modal-content modal-content--compact">
+      <form className="modal-content modal-content--compact" onSubmit={handleSubmit}>
         <h3>{title}</h3>
+        
         <input
           className="modal-field"
           value={value}
@@ -12,13 +21,17 @@ export default function NameModal({ title, value, placeholder, onChange, onClose
           placeholder={placeholder}
           autoFocus
         />
+        
         <div className="modal-actions">
-          <button className="button-secondary" onClick={onClose}>Отмена</button>
-          <button className="button-primary" onClick={onSave} disabled={!value.trim()}>
+          <button type="button" className="button-secondary" onClick={onClose}>
+            Отмена
+          </button>
+          
+          <button type="submit" className="button-primary" disabled={!value.trim()}>
             {saveLabel}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
