@@ -9,8 +9,9 @@ function SettingsPage() {
   const navigate = useNavigate();
   const [name, setName] = useState(() => getSessionUser() || "");
   const [status, setStatus] = useState("");
-  const [theme, setThemeState] = useState(() => getTheme());
+  const [theme, setThemeState] = useState(() => getTheme()); // Текущая тема интерфейса
 
+  // Редиректим на логин, если пользователь не авторизован
   useEffect(() => {
     const user = getSessionUser();
     if (!user) {
@@ -18,18 +19,21 @@ function SettingsPage() {
     }
   }, [navigate]);
 
+  // Переименовывает пользователя и обновляет все его доски
   const saveName = async () => {
     const trimmedName = name.trim();
     if (!trimmedName) return;
     const currentUser = getSessionUser();
     if (!currentUser) return;
 
+    // Если имя не изменилось — не делаем лишних операций
     if (trimmedName === currentUser) {
       setStatus("Имя не изменилось.");
       return;
     }
 
     const allBoards = await getBoards();
+    // Обновляем owner у всех досок текущего пользователя
     const renamedBoards = allBoards.map((board) => {
       if (board.user === currentUser) {
         return { ...board, user: trimmedName };
@@ -38,27 +42,32 @@ function SettingsPage() {
     });
 
     await saveBoards(renamedBoards);
+    // Синхронизируем изменения между вкладками
     channel.postMessage(renamedBoards);
     setSessionUser(trimmedName);
     setStatus("Имя обновлено для текущего пользователя.");
   };
 
+  // Удаляет ВСЕ доски текущего пользователя
   const clearMyBoards = async () => {
     const user = getSessionUser();
     if (!user) return;
 
     const allBoards = await getBoards();
+    // Оставляем только доски других пользователей
     const filteredBoards = allBoards.filter((board) => board.user !== user);
     await saveBoards(filteredBoards);
     channel.postMessage(filteredBoards);
     setStatus("Все ваши доски удалены.");
   };
 
+  // Очистка сессии и выход
   const logout = () => {
     clearSessionUser();
     navigate("/login");
   };
 
+  // Меняет тему и сохраняет её
   const changeTheme = (newTheme) => {
     setThemeState(newTheme);
     setTheme(newTheme);

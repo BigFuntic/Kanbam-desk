@@ -1,6 +1,6 @@
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
-// 🔹 получить все доски
+// получить все доски
 export const getBoards = async () => {
   await delay(400);
 
@@ -8,7 +8,7 @@ export const getBoards = async () => {
   return data;
 };
 
-// 🔹 сохранить все доски
+// сохранить все доски
 export const saveBoards = async (boards) => {
   await delay(400);
 

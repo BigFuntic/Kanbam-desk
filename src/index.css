@@ -1,3 +1,4 @@
+/* --- Светлая тема --- */
 :root[data-theme="light"] {
   --bg: #f7f4ff;
   --surface: #ffffff;
@@ -12,10 +13,12 @@
   --success: #059669;
 }
 
+/* Базовый reset и глобальные настройки */
 * {
   box-sizing: border-box;
 }
 
+/* Основной фон приложения (градиенты + тема) */
 body {
   margin: 0;
   font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
@@ -65,6 +68,7 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
+/* Основной контейнер страницы */
 .page-shell {
   max-width: 1120px;
   margin: 0 auto;
@@ -234,6 +238,10 @@ textarea:focus-visible {
   transform: translateY(-2px) scale(1.01);
 }
 
+/* Layout доски:
+   - горизонтальный скролл
+   - flex-контейнер колонок
+   - отключение стандартного scrollbar */
 .board-layout {
   display: flex;
   flex: 1;
@@ -241,6 +249,7 @@ textarea:focus-visible {
   align-items: flex-start;
   overflow: auto;
 
+  /* Скрываем нативный скроллбар (используется drag-scroll вместо него) */
   scrollbar-width: none;       /* Firefox */
   -ms-overflow-style: none;    /* IE/Edge */
   overscroll-behavior: contain;
@@ -254,7 +263,8 @@ textarea:focus-visible {
   cursor: grabbing;
 }
 
-.board-layout::-webkit-scrollbar {
+
+.board-layout::-webkit-scrollbar { /* Chrome/Safari */
   height: 8px;
   display: none;  
 }
@@ -292,6 +302,7 @@ textarea:focus-visible {
   gap: 6px;
 }
 
+/* Закреплённая колонка (всегда сверху/слева) */
 .column--pinned {
   border: 1px solid #a78bfa;
   background: linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%);
@@ -312,6 +323,7 @@ textarea:focus-visible {
   transform: translateY(-2px);
 }
 
+/* Отключаем выделение текста во время перетаскивания */
 .no-select {
   user-select: none;
 }
@@ -333,7 +345,7 @@ textarea:focus-visible {
   font-weight: 700;
 }
 
-/* --- Стили для компонента Card --- */
+/* Выполненная карточка (визуально приглушена) */
 .card-item--completed {
   opacity: 0.5;
 }
@@ -350,6 +362,7 @@ textarea:focus-visible {
   height: 16px;
 }
 
+/* Область для перетаскивания карточки */
 .card-title-wrap {
   cursor: grab;
   flex-grow: 1;
@@ -431,6 +444,7 @@ textarea:focus-visible {
   color: var(--text-secondary);
 }
 
+/* Затемнение фона + центрирование модалки */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -442,6 +456,7 @@ textarea:focus-visible {
   z-index: 10;
 }
 
+/* Контейнер модального окна */
 .modal-content {
   width: min(540px, 100%);
   max-height: 85vh; 
@@ -458,6 +473,7 @@ textarea:focus-visible {
   overflow: hidden;
 }
 
+/* Скроллимое тело модалки */
 .modal-body {
   overflow-y: auto;
   padding-right: 6px; 
@@ -822,6 +838,7 @@ textarea:focus-visible {
 }
 
 /* --- АНИМАЦИИ --- */
+/* Анимация пульсации (киберпанк эффект) */
 @keyframes cyberPulse {
   0% { box-shadow: 0 0 5px rgba(0, 255, 255, 0.5); }
   50% { box-shadow: 0 0 15px rgba(0, 255, 255, 0.8), inset 0 0 10px rgba(0, 255, 255, 0.3); border-color: #ff00ff; }
@@ -833,6 +850,7 @@ textarea:focus-visible {
   100% { background-position: 200% 50%; }
 }
 
+/* Glitch эффект текста */
 @keyframes glitchText {
   0%, 100% { text-shadow: 3px 0px 0px #ff00ff, -3px 0px 0px #00ffff; }
   92% { text-shadow: 3px 0px 0px #ff00ff, -3px 0px 0px #00ffff; transform: translate(0, 0); }
@@ -841,6 +859,7 @@ textarea:focus-visible {
   98% { text-shadow: -3px 0px 0px #ff00ff, 3px 0px 0px #00ffff; transform: translate(-1px, 1px); }
 }
 
+/* Светящийся эффект при drag */
 @keyframes dragGlow {
   0% { left: -50%; }
   100% { left: 120%; }

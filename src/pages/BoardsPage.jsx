@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { channel } from "./broadcast";
 import { getSessionUser, clearSessionUser } from "../sessionUser";
 import { getBoards, saveBoards } from "../api";
+import NameModal from "../components/NameModal.jsx";
 
 function BoardsPage() {
   const [boards, setBoards] = useState([]);
@@ -10,6 +11,7 @@ function BoardsPage() {
   const [newBoardTitle, setNewBoardTitle] = useState("");
   const navigate = useNavigate();
 
+  // Генерирует следующий уникальный id (на основе максимального существующего)
   const getNextBoardId = () => {
     const maxBoardId = boards.reduce((maxId, board) => {
       return typeof board.id === "number" && board.id > maxId ? board.id : maxId;
@@ -21,18 +23,20 @@ function BoardsPage() {
     getBoards().then(setBoards);
   }, []);
 
+  // Слушаем обновления из других вкладок (BroadcastChannel)
   useEffect(() => {
     const handler = (event) => {
       setBoards(event.data);
     };
 
     channel.addEventListener("message", handler);
-
+    // Очищаем listener при размонтировании
     return () => {
       channel.removeEventListener("message", handler);
     };
   }, []);
 
+  // Создание новой доски с привязкой к текущему пользователю
   const addBoard = () => {
     const name = newBoardTitle.trim();
     if (!name) return;
@@ -76,6 +80,7 @@ function BoardsPage() {
     await saveBoards(updated);
   };
 
+  // Переключаем закрепление доски (pinned)
   const togglePinBoard = (boardId) => {
     const toggledBoard = boards.find((b) => b.id === boardId);
     if (!toggledBoard) return;
@@ -89,7 +94,8 @@ function BoardsPage() {
       return b;
     });
   
-    // разделяем
+    // Делим доски на закрепленные и обычные
+    // Новая закрепленная доска уходит в начало списка закрепленных
     let pinned = updated.filter((b) => b.pinned);
     const unpinned = updated
       .filter((b) => !b.pinned)
@@ -101,7 +107,7 @@ function BoardsPage() {
       pinned = newlyPinned ? [newlyPinned, ...otherPinned] : otherPinned;
     }
   
-    // 👇 закрепленные всегда сверху
+    // Итог: закрепленные сверху, остальные по order
     updated = [...pinned, ...unpinned];
   
     setBoards(updated);
@@ -109,6 +115,7 @@ function BoardsPage() {
     channel.postMessage(updated);
   };
 
+  // Показываем только доски текущего пользователя
   const user = getSessionUser();
   const myBoards = boards.filter((b) => b.user === user);
 
@@ -194,29 +201,6 @@ function BoardsPage() {
           saveLabel="Создать"
         />
       )}
-    </div>
-  );
-}
-
-function NameModal({ title, value, placeholder, onChange, onClose, onSave, saveLabel }) {
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content modal-content--compact">
-        <h3>{title}</h3>
-        <input
-          className="modal-field"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          autoFocus
-        />
-        <div className="modal-actions">
-          <button className="button-secondary" onClick={onClose}>Отмена</button>
-          <button className="button-primary" onClick={onSave} disabled={!value.trim()}>
-            {saveLabel}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

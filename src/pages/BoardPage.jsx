@@ -192,6 +192,9 @@ function BoardPage() {
     saveAndUpdate(updated);
   };
 
+  // Переключение закрепления колонки:
+  // закрепленные всегда идут первыми,
+  // порядок остальных сохраняется
   const togglePinColumn = (columnId) => {
     const data = JSON.parse(localStorage.getItem("boards")) || [];
 
@@ -240,6 +243,10 @@ function BoardPage() {
     setIsModalOpen(true);
   };
   
+  // Сохранение карточки:
+  // - create: добавляем новую
+  // - edit: обновляем существующую
+  // - delete: удаляем
   const saveCardChanges = (mode = "save") => {
     if (mode === "delete") {
       const data = JSON.parse(localStorage.getItem("boards")) || [];
@@ -311,6 +318,7 @@ function BoardPage() {
     setIsModalOpen(false);
   };
 
+  // Drag-scroll доски (горизонтальный скролл зажатой мышью)
   const boardRef = useRef(null);
   const isDraggingRef = useRef(false);
   const startX = useRef(0);

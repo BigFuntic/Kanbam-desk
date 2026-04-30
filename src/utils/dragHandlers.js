@@ -16,6 +16,11 @@ export const handleDragStart = (event, board, setActiveCard) => {
     setActiveCard(found);
   };
 
+  // Обработка завершения перетаскивания карточки:
+    // 1. Определяем источник и цель
+    // 2. Если внутри одной колонки — reorder
+    // 3. Если между колонками — перенос
+    // 4. Сохраняем изменения
   export const handleDragEnd = (
     event,
     board,
