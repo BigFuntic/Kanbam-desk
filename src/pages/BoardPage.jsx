@@ -1,17 +1,28 @@
-import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { DndContext, closestCenter, useDroppable } from "@dnd-kit/core";
 import { DragOverlay } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
-import { channel } from "./broadcast";
-import { getBoards, saveBoards } from "../api";
-import { useRef } from "react";
+
+import {
+  getNextCardId,
+  getNextColumnId,
+  getNextColumnOrder
+} from "../utils/boardHelpers"; // Утилиты для генерации ID и порядка колонок/карточек
+import { handleDragStart, handleDragEnd } from "../utils/dragHandlers"; // Логика перетаскивания карточек (dnd-kit)
+import { useBoard } from "../hooks/useBoard";// Хук для работы с доской: загрузка, синхронизация между вкладками, сохранение
+
+import Card from "../components/Card.jsx";
+import Column from "../components/Column.jsx";
+import Modal from "../components/Modal.jsx";
+import NameModal from "../components/NameModal.jsx";
 
 function BoardPage() {
   const { id } = useParams();
-  const [board, setBoard] = useState(null);
   const navigate = useNavigate();
+  const { board, setBoard, saveAndUpdate } = useBoard(id);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
   const [modalMode, setModalMode] = useState("edit");
@@ -19,53 +30,7 @@ function BoardPage() {
   const [newColumnTitle, setNewColumnTitle] = useState("");
   const [activeCard, setActiveCard] = useState(null);
   const [isDraggingBoard, setIsDraggingBoard] = useState(false);
-
-  const getNextCardId = (columns = []) => {
-    const maxCardId = columns.reduce((maxId, column) => {
-      const columnMax = (column.cards || []).reduce((innerMax, card) => {
-        return typeof card.id === "number" && card.id > innerMax ? card.id : innerMax;
-      }, 0);
-      return columnMax > maxId ? columnMax : maxId;
-    }, 0);
-    return maxCardId + 1;
-  };
-
-  const getNextColumnId = (columns = []) => {
-    const maxColumnId = columns.reduce((maxId, column) => {
-      return typeof column.id === "number" && column.id > maxId ? column.id : maxId;
-    }, 0);
-    return maxColumnId + 1;
-  };
-
-  const getNextColumnOrder = (columns = []) => {
-    const maxOrder = columns.reduce((maxValue, column, index) => {
-      const fallbackOrder = index;
-      const columnOrder = typeof column.order === "number" ? column.order : fallbackOrder;
-      return columnOrder > maxValue ? columnOrder : maxValue;
-    }, -1);
-    return maxOrder + 1;
-  };
-
-  useEffect(() => {
-    getBoards().then((data) => {
-      const foundBoard = data.find((b) => b.id == id);
-      setBoard(foundBoard);
-    });
-  }, [id]);
-
-  useEffect(() => {
-    const handler = (event) => {
-      const data = event.data;
-      const updatedBoard = data.find((b) => b.id == id);
-      setBoard(updatedBoard);
-    };
   
-    channel.addEventListener("message", handler);
-  
-    return () => {
-      channel.removeEventListener("message", handler);
-    };
-  }, [id]);
 
   const addColumn = () => {
     const name = newColumnTitle.trim();
@@ -109,14 +74,6 @@ function BoardPage() {
   
     setModalMode("create");
     setIsModalOpen(true);
-  };
-
-  const saveAndUpdate = async (updatedData) => {
-    const newBoard = updatedData.find((b) => b.id == id);
-    setBoard(newBoard);
-    channel.postMessage(updatedData);
-
-    await saveBoards(updatedData);
   };
 
   const editCard = (columnId, cardId) => {
@@ -277,119 +234,6 @@ function BoardPage() {
     saveAndUpdate(updated);
   };
 
-  const handleDragStart = (event) => {
-    const { active } = event;
-
-    const activeId = String(active.id);
-    if (!activeId.startsWith("card-")) return;
-
-    const cardId = Number(activeId.replace("card-", ""));
-
-    const found = board.columns
-      .flatMap(col => col.cards || [])
-      .find(c => c.id === cardId);
-
-    setActiveCard(found);
-  };
-
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
-  
-    const activeId = String(active.id);
-    if (!activeId.startsWith("card-")) return;
-  
-    if (!over) {
-      setActiveCard(null);
-      return;
-    }
-  
-    const overId = String(over.id);
-    const isColumn = overId.startsWith("column-");
-    const isCard = overId.startsWith("card-");
-  
-    if (!isColumn && !isCard) {
-      setActiveCard(null);
-      return;
-    }
-  
-    const activeCardId = Number(activeId.replace("card-", ""));
-    const overCardId = isCard ? Number(overId.replace("card-", "")) : null;
-    const overColumnId = isColumn ? Number(overId.replace("column-", "")) : null;
-  
-    const sourceColumn = board.columns.find((col) =>
-      (col.cards || []).some((card) => card.id === activeCardId)
-    );
-    if (!sourceColumn) return;
-  
-    const targetColumn = overCardId
-      ? board.columns.find((col) => (col.cards || []).some((card) => card.id === overCardId))
-      : board.columns.find((col) => col.id === overColumnId);
-      
-    if (!targetColumn) return;
-  
-    const movedCard = sourceColumn.cards.find((card) => card.id === activeCardId);
-    if (!movedCard) return;
-  
-    const updatedColumns = board.columns.map((col) => ({ ...col, cards: [...(col.cards || [])] }));
-    const source = updatedColumns.find((col) => col.id === sourceColumn.id);
-    const target = updatedColumns.find((col) => col.id === targetColumn.id);
-    if (!source || !target) return;
-  
-    const sourceIndex = source.cards.findIndex((card) => card.id === activeCardId);
-    if (sourceIndex < 0) return;
-  
-    if (source.id === target.id && overCardId) {
-      const targetIndex = source.cards.findIndex((card) => card.id === overCardId);
-      if (targetIndex < 0) return;
-      source.cards = arrayMove(source.cards, sourceIndex, targetIndex);
-  
-      const data = JSON.parse(localStorage.getItem("boards")) || [];
-      const updated = data.map((b) => {
-        if (b.id == id) {
-          return { ...b, columns: updatedColumns };
-        }
-        return b;
-      });
-  
-      saveAndUpdate(updated);
-      return;
-    }
-  
-    source.cards = source.cards.filter((card) => card.id !== activeCardId);
-  
-    if (overCardId) {
-      const overIndex = target.cards.findIndex((card) => card.id === overCardId);
-      const isBelowOverItem =
-        active.rect.current.translated &&
-        active.rect.current.translated.top > over.rect.top + over.rect.height / 2;
-  
-      let insertIndex = overIndex >= 0 ? overIndex : target.cards.length;
-  
-      if (source.id === target.id && sourceIndex >= 0 && sourceIndex < overIndex) {
-        insertIndex -= 1;
-      }
-  
-      if (isBelowOverItem) {
-        insertIndex += 1;
-      }
-  
-      insertIndex = Math.max(0, Math.min(insertIndex, target.cards.length));
-      target.cards.splice(insertIndex, 0, movedCard);
-    } else {
-      target.cards.push(movedCard);
-    }
-  
-    const data = JSON.parse(localStorage.getItem("boards")) || [];
-    const updated = data.map((b) => {
-      if (b.id == id) {
-        return { ...b, columns: updatedColumns };
-      }
-      return b;
-    });
-  
-    saveAndUpdate(updated);
-  };
-
   const openEditModal = (card, columnId) => {
     setSelectedCard({ ...card, columnId });
     setModalMode("edit");
@@ -475,15 +319,16 @@ function BoardPage() {
   const onMouseDown = (e) => {
     setIsDraggingBoard(true);
     isDraggingRef.current = true;
-    startX.current = e.pageX - boardRef.current.offsetLeft;
+    startX.current = e.clientX;
     scrollLeft.current = boardRef.current.scrollLeft;
   };
   
   const onMouseMove = (e) => {
     if (!isDraggingRef.current || activeCard) return;
   
-    const x = e.pageX - boardRef.current.offsetLeft;
+    const x = e.clientX;
     const walk = (x - startX.current) * 1.2;
+  
     boardRef.current.scrollLeft = scrollLeft.current - walk;
   };
   
@@ -502,11 +347,10 @@ function BoardPage() {
   return (
     <DndContext
       collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={(e) => {
-        handleDragEnd(e);
-        setActiveCard(null);
-      }}
+      onDragStart={(e) => handleDragStart(e, board, setActiveCard)}
+      onDragEnd={(e) =>
+        handleDragEnd(e, board, id, saveAndUpdate, setActiveCard)
+      }
     >
       <div className="page-shell page-shell--board">
         <div className="page-header">
@@ -558,7 +402,7 @@ function BoardPage() {
                       card={card}
                       col={col}
                       editCard={editCard}
-                      deleteCard={deleteCard}
+                      
                       openEditModal={openEditModal}
                       toggleCardCompletion={toggleCardCompletion} 
                     />
@@ -602,241 +446,6 @@ function BoardPage() {
         ) : null}
       </DragOverlay>
     </DndContext>
-  );
-}
-
-// ИЗМЕНЕНО: Компонент Card обновлен
-function Card({ card, col, editCard, deleteCard, openEditModal, toggleCardCompletion }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: `card-${card.id}`
-  });
-
-  const style = {
-    transition,
-    // Если перетаскиваем - 0.3, если выполнено - 0.5 (потускнение), иначе 1
-    opacity: isDragging ? 0.3 : (card.completed ? 0.5 : 1)
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} className={`card-item ${card.completed ? "card-item--completed" : ""}`}>
-      <div className="card-header-row">
-        
-        <input 
-          type="checkbox" 
-          checked={!!card.completed}
-          onChange={() => toggleCardCompletion(col.id, card.id)}
-          className="card-checkbox"
-        />
-
-        <div
-          {...listeners}
-          {...attributes}
-          className="card-title-wrap"
-        >
-          <span 
-            className={`card-title ${card.completed ? "card-title--completed" : ""}`} 
-            onClick={() => editCard(col.id, card.id)}
-          >
-            {card.title}
-          </span>
-        </div>
-      </div>
-
-      {card.images?.length > 0 && (
-        <div className="card-images">
-          {card.images.map((img, i) => (
-            <img key={i} src={img} className="card-image" />
-          ))}
-        </div>
-      )}
-
-      <button
-        className="card-edit-btn"
-        onClick={(e) => {
-          e.stopPropagation();
-          openEditModal(card, col.id);
-        }}
-      >
-        •••
-      </button>
-
-      {card.description && (
-        <div className="card-meta">{card.description}</div>
-      )}
-
-      {card.deadline && (
-        <div className="card-meta">
-          ⏰ {new Date(card.deadline).toLocaleDateString()}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Column({ col, children, togglePinColumn }) {
-  const { setNodeRef } = useDroppable({
-    id: `column-${col.id}`
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`column ${col.pinned ? "column--pinned" : ""}`}
-    >
-      <button
-        className="button-secondary pin-btn"
-        onClick={(e) => {
-          e.stopPropagation();
-          togglePinColumn(col.id);
-        }}
-      >
-        📌
-      </button>
-
-      <div className="column-header">
-        <h3>{col.title}</h3>
-      </div>
-
-      {children}
-    </div>
-  );
-}
-
-function Modal({ card, setCard, onClose, onSave }) {
-  const [error, setError] = useState("");
-  if (!card) return null;
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <div className="modal-body">
-          <h3>
-            {card.title ? "Редактировать карточку" : "Создать карточку"}
-          </h3>
-
-          <input
-            className="modal-field"
-            value={card.title}
-            onChange={(e) => {
-              setCard({ ...card, title: e.target.value });
-              setError("");
-            }}
-            placeholder="Название"
-          />
-
-          {error && <div className="modal-error">{error}</div>} 
-
-          <textarea
-            className="modal-field"
-            value={card.description}
-            onChange={(e) =>
-              setCard({ ...card, description: e.target.value })
-            }
-            placeholder="Описание"
-          />
-
-          <input
-            className="modal-field"
-            type="file"
-            multiple
-            onChange={(e) => {
-              const files = Array.from(e.target.files);
-
-              files.forEach((file) => {
-                const reader = new FileReader();
-
-                reader.onload = () => {
-                  setCard((prev) => ({
-                    ...prev,
-                    images: [...(prev.images || []), reader.result]
-                  }));
-                };
-
-                reader.readAsDataURL(file);
-              });
-            }}
-          />
-
-          <div className="card-meta">
-            {card.images?.map((img, index) => (
-              <div key={index} className="modal-image-wrap">
-                <img src={img} width={100} className="modal-image" />
-
-                <button
-                  className="button-danger modal-image-delete"
-                  onClick={() => {
-                    const newImages = card.images.filter((_, i) => i !== index);
-                    setCard({ ...card, images: newImages });
-                  }}
-                >
-                  ❌
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <input
-            className="modal-field"
-            type="date"
-            value={card.deadline || ""}
-            onChange={(e) =>
-              setCard({ ...card, deadline: e.target.value })
-            }
-          />
-        </div>
-        <div className="modal-actions">
-          <button className="button-secondary" onClick={onClose}>Закрыть</button>
-
-          <button className="button-danger" onClick={() => {
-            const confirmDelete = window.confirm("Удалить карточку?");
-            if (!confirmDelete) return;
-
-            onSave("delete");
-          }}>
-            Удалить
-          </button>
-
-          <button
-            className="button-primary"
-            disabled={!card.title.trim()}
-            onClick={() => {
-              if (!card.title.trim()) {
-                setError("Название обязательно");
-                return;
-              }
-
-              setError("");
-              onSave();
-            }}
-          >
-            Сохранить
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NameModal({ title, value, placeholder, onChange, onClose, onSave, saveLabel }) {
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content modal-content--compact">
-        <h3>{title}</h3>
-        <input
-          className="modal-field"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          autoFocus
-        />
-        <div className="modal-actions">
-          <button className="button-secondary" onClick={onClose}>Отмена</button>
-          <button className="button-primary" onClick={onSave} disabled={!value.trim()}>
-            {saveLabel}
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 
